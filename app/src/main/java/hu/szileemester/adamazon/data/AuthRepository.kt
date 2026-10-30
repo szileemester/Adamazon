@@ -69,7 +69,11 @@ class AuthRepository(
 
     /** Shows the Google account picker. Returns an error message, or null on success or cancel. */
     suspend fun signIn(activityContext: Context): String? = try {
-        val option = GetSignInWithGoogleOption.Builder(activityContext.getString(R.string.default_web_client_id)).build()
+        val clientId = activityContext.getString(R.string.default_web_client_id)
+        // The committed google-services.json is a placeholder; Google then rejects sign-in with a
+        // generic "cancelled", so say what is actually wrong.
+        if (PLACEHOLDER_MARKER in clientId) return CONFIG_MISSING
+        val option = GetSignInWithGoogleOption.Builder(clientId).build()
         val request = GetCredentialRequest.Builder().addCredentialOption(option).build()
         val credential = CredentialManager.create(activityContext).getCredential(activityContext, request).credential
         if (credential is CustomCredential &&
@@ -82,9 +86,16 @@ class AuthRepository(
             "Ismeretlen bejelentkezési mód."
         }
     } catch (_: GetCredentialCancellationException) {
-        null
+        // Also reported when Google rejects the app (e.g. unregistered SHA-1), not only on Back.
+        "A bejelentkezés megszakadt. Ha nem te léptél ki, ellenőrizd a Firebase-ben az SHA-1 ujjlenyomatot (SETUP.md)."
     } catch (e: Exception) {
         e.message ?: e.javaClass.simpleName
+    }
+
+    private companion object {
+        const val PLACEHOLDER_MARKER = "placeholder"
+        const val CONFIG_MISSING =
+            "A Firebase még nincs beállítva: cseréld le az app/google-services.json fájlt a saját projektedére (SETUP.md 1. lépés)."
     }
 
     suspend fun signOut(context: Context) {
