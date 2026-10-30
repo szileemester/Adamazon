@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- ground shadow -->
+    <path
+        android:fillColor="#260D3B66"
+        android:pathData="M30,84a28,3.5 0,1 0,56 0a28,3.5 0,1 0,-56 0z" />
+
+    <!-- handle + frame -->
+    <path
+        android:strokeColor="#FF0D47A1"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M23,32L31,32L35,40" />
+
+    <!-- basket side (depth) -->
+    <path
+        android:fillColor="#FF0B3C8C"
+        android:pathData="M81,40L85,43L78.5,64L75,62Z" />
+
+    <!-- basket front with gradient -->
+    <path android:pathData="M34,40L81,40L75,62L40,62Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="40"
+                android:startY="38"
+                android:endX="70"
+                android:endY="64"
+                android:startColor="#FF5EC4FF"
+                android:centerColor="#FF2196F3"
+                android:endColor="#FF1259B8" />
+        </aapt:attr>
+    </path>
+
+    <!-- basket grid -->
+    <path
+        android:strokeColor="#55FFFFFF"
+        android:strokeWidth="1.4"
+        android:pathData="M36.5,47.5L78.9,47.5M38.5,55L76.9,55M46,40L49,62M58,40L58,62M70,40L67,62" />
+
+    <!-- glossy highlight -->
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M36,41.5L79,41.5L78.3,44L36.8,44Z" />
+
+    <!-- smile arrow -->
+    <path
+        android:strokeColor="#FF1E88E5"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:pathData="M41,67Q58,77 76,67" />
+    <path
+        android:fillColor="#FF1E88E5"
+        android:pathData="M72.5,63.8L80.5,64.6L75.6,70.8Z" />
+
+    <!-- wheels -->
+    <path
+        android:fillColor="#FF0D47A1"
+        android:pathData="M41,79a5,5 0,1 0,10 0a5,5 0,1 0,-10 0z" />
+    <path
+        android:fillColor="#FF0D47A1"
+        android:pathData="M66,79a5,5 0,1 0,10 0a5,5 0,1 0,-10 0z" />
+    <path
+        android:fillColor="#FF90CAF9"
+        android:pathData="M44,79a2,2 0,1 0,4 0a2,2 0,1 0,-4 0z" />
+    <path
+        android:fillColor="#FF90CAF9"
+        android:pathData="M69,79a2,2 0,1 0,4 0a2,2 0,1 0,-4 0z" />
+</vector>

@@ -1,0 +1,140 @@
+{
+  "zoldseg": {
+    "zöldség": "🥬", "paradicsom": "🍅", "koktélparadicsom": "🍅", "uborka": "🥒", "kígyóuborka": "🥒",
+    "kovászos uborka": "🥒", "csemege uborka": "🥒", "sárgarépa": "🥕", "répa": "🥕", "petrezselyem": "🌿",
+    "zeller": "🥬", "krumpli": "🥔", "burgonya": "🥔", "újkrumpli": "🥔", "édesburgonya": "🍠", "batáta": "🍠",
+    "hagyma": "🧅", "vöröshagyma": "🧅", "lilahagyma": "🧅", "újhagyma": "🧅", "póréhagyma": "🧅",
+    "fokhagyma": "🧄", "saláta": "🥬", "jégsaláta": "🥬", "fejes saláta": "🥬", "rukkola": "🥬",
+    "spenót": "🥬", "káposzta": "🥬", "fejes káposzta": "🥬", "kelkáposzta": "🥬", "lilakáposzta": "🥬",
+    "karalábé": "🥬", "brokkoli": "🥦", "karfiol": "🥦", "kukorica": "🌽", "csemegekukorica": "🌽",
+    "paprika": "🫑", "kaliforniai paprika": "🫑", "tv paprika": "🫑", "chili": "🌶️", "erőspaprika": "🌶️",
+    "padlizsán": "🍆", "cukkini": "🥒", "tök": "🎃", "sütőtök": "🎃", "avokádó": "🥑", "gomba": "🍄",
+    "csiperke": "🍄", "csiperkegomba": "🍄", "laskagomba": "🍄", "zöldbab": "🫘", "borsó": "🌱",
+    "zöldborsó": "🌱", "retek": "🌱", "jégcsapretek": "🌱", "cékla": "🌱", "spárga": "🌱", "kapor": "🌿",
+    "bazsalikom": "🌿", "menta": "🌿", "snidling": "🌿", "petrezselyemzöld": "🌿", "rozmaring": "🌿",
+    "gyömbér": "🌱", "csíra": "🌱", "fűszernövény": "🌿", "torma": "🌱", "édeskömény": "🌿"
+  },
+  "gyumolcs": {
+    "gyümölcs": "🍎", "alma": "🍎", "zöldalma": "🍏", "körte": "🍐", "banán": "🍌", "narancs": "🍊",
+    "mandarin": "🍊", "klementin": "🍊", "citrom": "🍋", "lime": "🍋", "grapefruit": "🍊", "szőlő": "🍇",
+    "eper": "🍓", "földieper": "🍓", "málna": "🍓", "áfonya": "🫐", "szeder": "🫐", "ribizli": "🍒",
+    "cseresznye": "🍒", "meggy": "🍒", "barack": "🍑", "őszibarack": "🍑", "sárgabarack": "🍑",
+    "nektarin": "🍑", "szilva": "🍑", "kiwi": "🥝", "ananász": "🍍", "mangó": "🥭", "dinnye": "🍉",
+    "görögdinnye": "🍉", "sárgadinnye": "🍈", "kókusz": "🥥", "gránátalma": "🍎", "füge": "🍇",
+    "datolya": "🍇", "bogyós": "🫐", "maracuja": "🥭", "papaya": "🥭"
+  },
+  "pekaru": {
+    "kenyér": "🍞", "fehér kenyér": "🍞", "barna kenyér": "🍞", "rozskenyér": "🍞", "teljes kiőrlésű kenyér": "🍞",
+    "toast": "🍞", "toastkenyér": "🍞", "kalács": "🍞", "fonott kalács": "🍞", "briós": "🍞", "zsemle": "🥖",
+    "zsömle": "🥖", "kifli": "🥐", "croissant": "🥐", "bagett": "🥖", "baguette": "🥖", "perec": "🥨",
+    "pogácsa": "🥯", "péksütemény": "🥐", "pékáru": "🥖", "kakaós csiga": "🥐", "túrós táska": "🥐",
+    "pizzás csiga": "🥐", "lángos": "🥖", "pita": "🥙", "hamburger zsemle": "🍔", "hot dog kifli": "🌭",
+    "bagel": "🥯", "rozsos": "🍞", "magos": "🍞", "buci": "🥖", "kalácskifli": "🥐", "rétes": "🥐"
+  },
+  "hus": {
+    "hús": "🥩", "csirke": "🍗", "csirkemell": "🍗", "csirkecomb": "🍗", "csirkeszárny": "🍗",
+    "csirkemáj": "🍗", "pulyka": "🍗", "pulykamell": "🍗", "sertés": "🥩", "sertéshús": "🥩", "karaj": "🥩",
+    "tarja": "🥩", "oldalas": "🍖", "dagadó": "🥩", "comb": "🍗", "darált hús": "🥩", "darált": "🥩",
+    "marha": "🥩", "marhahús": "🥩", "borjú": "🥩", "bárány": "🍖", "kacsa": "🍗", "kacsacomb": "🍗",
+    "liba": "🍗", "máj": "🥩", "virsli": "🌭", "kolbász": "🌭", "debreceni": "🌭", "kabanos": "🌭",
+    "hurka": "🌭", "szalámi": "🍖", "sonka": "🍖", "főtt sonka": "🍖", "bacon": "🥓", "szalonna": "🥓",
+    "felvágott": "🍖", "párizsi": "🍖", "kenőmájas": "🍖", "májkrém": "🍖", "pástétom": "🍖", "hal": "🐟",
+    "lazac": "🐟", "harcsa": "🐟", "ponty": "🐟", "pisztráng": "🐟", "tőkehal": "🐟", "garnéla": "🦐",
+    "rák": "🦐", "tintahal": "🦑", "fasírt": "🥩", "hamburgerhús": "🍔", "steak": "🥩", "gyros": "🥙",
+    "szárnyas": "🍗", "csülök": "🍖", "lapocka": "🥩", "borda": "🥩", "tepertő": "🥓"
+  },
+  "tejtermek": {
+    "tej": "🥛", "tejföl": "🥛", "tejszín": "🥛", "habtejszín": "🥛", "főzőtejszín": "🥛", "vaj": "🧈",
+    "margarin": "🧈", "rama": "🧈", "sajt": "🧀", "trappista": "🧀", "gouda": "🧀", "edami": "🧀",
+    "mozzarella": "🧀", "parmezán": "🧀", "feta": "🧀", "camembert": "🧀", "brie": "🧀", "cheddar": "🧀",
+    "krémsajt": "🧀", "ömlesztett sajt": "🧀", "reszelt sajt": "🧀", "füstölt sajt": "🧀", "túró": "🧀",
+    "joghurt": "🥛", "görög joghurt": "🥛", "kefir": "🥛", "író": "🥛", "tojás": "🥚", "mascarpone": "🧀",
+    "ricotta": "🧀", "puding": "🍮", "tejberizs": "🍮", "túró rudi": "🍫", "zabtej": "🥛", "mandulatej": "🥛",
+    "kókuszital": "🥛", "növényi ital": "🥛", "élesztő": "🍞", "tejpor": "🥛", "skyr": "🥛", "kakaós tej": "🥛"
+  },
+  "fagyasztott": {
+    "fagyasztott": "🧊", "mirelit": "🧊", "gyorsfagyasztott": "🧊", "jégkrém": "🍦", "fagyi": "🍦",
+    "fagylalt": "🍦", "jég": "🧊", "jégkocka": "🧊", "pizza": "🍕", "fagyasztott pizza": "🍕",
+    "hasábburgonya": "🍟", "sült krumpli": "🍟", "steakburgonya": "🍟", "halrudacska": "🐟", "rántott": "🍗",
+    "nuggets": "🍗", "réteslap": "🥐", "leveles tészta": "🥐", "pizzatészta": "🍕"
+  },
+  "tartos": {
+    "liszt": "🌾", "finomliszt": "🌾", "rétesliszt": "🌾", "cukor": "🍬", "porcukor": "🍬", "barna cukor": "🍬",
+    "vaníliás cukor": "🍬", "só": "🧂", "bors": "🧂", "fűszer": "🧂", "pirospaprika": "🌶️", "őrölt paprika": "🌶️",
+    "fahéj": "🧂", "oregano": "🌿", "babérlevél": "🌿", "kömény": "🧂", "majoránna": "🌿", "szerecsendió": "🧂",
+    "rizs": "🍚", "jázmin rizs": "🍚", "basmati": "🍚", "tészta": "🍝", "spagetti": "🍝", "makaróni": "🍝",
+    "penne": "🍝", "fusilli": "🍝", "lasagne": "🍝", "galuska": "🍝", "tarhonya": "🍝", "cérnametélt": "🍝",
+    "kuszkusz": "🍚", "bulgur": "🍚", "quinoa": "🍚", "zabpehely": "🥣", "müzli": "🥣", "gabonapehely": "🥣",
+    "kukoricapehely": "🥣", "olaj": "🫒", "olívaolaj": "🫒", "napraforgóolaj": "🌻", "étolaj": "🌻",
+    "ecet": "🍶", "balzsamecet": "🍶", "konzerv": "🥫", "paradicsompüré": "🥫", "paradicsomszósz": "🥫",
+    "passata": "🥫", "sűrített paradicsom": "🥫", "ketchup": "🥫", "mustár": "🥫", "majonéz": "🥫",
+    "szósz": "🥫", "pesto": "🥫", "szójaszósz": "🥫", "lencse": "🫘", "bab": "🫘", "csicseriborsó": "🫘", "szárazbab": "🫘",
+    "babkonzerv": "🥫", "kukoricakonzerv": "🥫", "tonhal": "🥫", "tonhalkonzerv": "🥫", "szardínia": "🥫",
+    "méz": "🍯", "lekvár": "🍯", "dzsem": "🍯", "mogyoróvaj": "🥜", "mogyoró": "🥜", "földimogyoró": "🥜",
+    "dió": "🌰", "mandula": "🌰", "kesudió": "🌰", "tökmag": "🌰", "napraforgómag": "🌻", "mazsola": "🍇",
+    "aszalt": "🍇", "kávé": "☕", "őrölt kávé": "☕", "szemes kávé": "☕", "kávékapszula": "☕", "kapszula": "☕",
+    "tea": "🍵", "filteres tea": "🍵", "kakaó": "☕", "kakaópor": "☕", "sütőpor": "🧁", "szódabikarbóna": "🧂",
+    "zselatin": "🧁", "zsemlemorzsa": "🍞", "levespor": "🥣", "leveskocka": "🥣", "húsleveskocka": "🥣",
+    "instant": "🍜", "zacskós leves": "🍜", "kókusztej": "🥥", "tortilla": "🌮", "olajbogyó": "🫒",
+    "savanyúság": "🥒", "csemegekukorica konzerv": "🥫", "pudingpor": "🧁", "nokedli": "🍝", "keményítő": "🌾"
+  },
+  "edesseg": {
+    "csoki": "🍫", "csokoládé": "🍫", "nutella": "🍫", "milka": "🍫", "kinder": "🍫", "balaton": "🍫",
+    "bonbon": "🍬", "cukorka": "🍬", "gumicukor": "🍬", "haribo": "🍬", "nyalóka": "🍭", "keksz": "🍪",
+    "ostya": "🍪", "háztartási keksz": "🍪", "sütemény": "🍰", "torta": "🎂", "muffin": "🧁", "fánk": "🍩",
+    "chips": "🍟", "sós rúd": "🥨", "sósrúd": "🥨", "ropi": "🥨", "popcorn": "🍿", "pattogatott kukorica": "🍿",
+    "müzliszelet": "🍫", "nápolyi": "🍪", "piskóta": "🍰", "rágó": "🍬", "rágógumi": "🍬", "drazsé": "🍬",
+    "édesség": "🍫", "snack": "🍿", "mignon": "🍰", "zserbó": "🍰", "bejgli": "🍰"
+  },
+  "ital": {
+    "ital": "🥤", "víz": "💧", "ásványvíz": "💧", "szénsavas víz": "💧", "szódavíz": "💧", "szóda": "💧",
+    "üdítő": "🥤", "kóla": "🥤", "cola": "🥤", "coca cola": "🥤", "pepsi": "🥤", "fanta": "🥤", "sprite": "🥤",
+    "gyümölcslé": "🧃", "narancslé": "🧃", "almalé": "🧃", "rostos": "🧃", "szörp": "🧃", "jegestea": "🧃",
+    "ice tea": "🧃", "energiaital": "🥤", "red bull": "🥤", "sör": "🍺", "bor": "🍷", "vörösbor": "🍷",
+    "fehérbor": "🥂", "rozé": "🍷", "fröccs": "🍷", "pezsgő": "🍾", "pálinka": "🥃", "whisky": "🥃",
+    "vodka": "🍸", "rum": "🥃", "likőr": "🍸", "unicum": "🥃", "jägermeister": "🥃", "gin": "🍸",
+    "cider": "🍺", "alkoholmentes sör": "🍺", "limonádé": "🍋", "tonic": "🥤"
+  },
+  "tisztito": {
+    "tisztítószer": "🧴", "mosogatószer": "🧴", "mosószer": "🧺", "mosópor": "🧺", "mosógél": "🧺",
+    "mosókapszula": "🧺", "öblítő": "🧺", "fehérítő": "🧴", "hypo": "🧴", "domestos": "🧴", "vízkőoldó": "🧴",
+    "ablaktisztító": "🧴", "súrolószer": "🧽", "súroló": "🧽", "szivacs": "🧽", "mosogatószivacs": "🧽",
+    "felmosó": "🧹", "seprű": "🧹", "mosogatógép": "🍽️", "mosogatógép tabletta": "🍽️", "mosogatógép só": "🍽️", "mosogatógép öblítő": "🍽️", "wc tisztító": "🚽",
+    "wc kacsa": "🚽", "toalett tisztító": "🚽", "folttisztító": "🧴", "folteltávolító": "🧴",
+    "padlótisztító": "🧴", "zsíroldó": "🧴", "fertőtlenítő": "🧴", "klór": "🧴", "vanish": "🧴",
+    "ariel": "🧺", "persil": "🧺", "lenor": "🧺", "cif": "🧴", "bref": "🚽",
+    "wc illatosító": "🚽", "légfrissítő": "🌸", "vízlágyító": "🧺", "calgon": "🧺"
+  },
+  "drogeria": {
+    "wc papír": "🧻", "toalettpapír": "🧻", "papír zsebkendő": "🤧", "zsebkendő": "🤧", "sampon": "🧴",
+    "balzsam": "🧴", "hajbalzsam": "🧴", "tusfürdő": "🧴", "tusolózselé": "🧴", "habfürdő": "🛁",
+    "szappan": "🧼", "folyékony szappan": "🧼", "kézmosó": "🧼", "fogkrém": "🦷", "fogkefe": "🦷",
+    "fogselyem": "🦷", "fogköztisztító": "🦷", "szájvíz": "🦷", "dezodor": "🧴", "deo": "🧴",
+    "izzadásgátló": "🧴", "borotva": "🪒", "borotvapenge": "🪒", "borotvahab": "🪒", "borotvazselé": "🪒",
+    "testápoló": "🧴", "kézkrém": "🧴", "arckrém": "🧴", "naptej": "🧴", "naptejet": "🧴", "smink": "💄",
+    "rúzs": "💄", "szempillaspirál": "💄", "alapozó": "💄", "körömlakk": "💅", "körömlakklemosó": "💅",
+    "vatta": "🧴", "vattakorong": "🧴", "fültisztító": "🧴", "tampon": "🧴", "betét": "🧴", "intimbetét": "🧴",
+    "pelenka": "👶", "popsitörlő": "👶", "nedves törlőkendő": "🧻", "vitamin": "💊", "c vitamin": "💊",
+    "gyógyszer": "💊", "fájdalomcsillapító": "💊", "sebtapasz": "🩹", "tapasz": "🩹", "hajfesték": "🧴",
+    "hajzselé": "🧴", "hajlakk": "🧴", "hajgumi": "🧴", "parfüm": "🧴", "kozmetikum": "🧴", "arclemosó": "🧴",
+    "micellás víz": "🧴", "ajakbalzsam": "💄", "óvszer": "🧴", "kontaktlencse folyadék": "👓"
+  },
+  "haztartas": {
+    "papírtörlő": "🧻", "konyhai papír": "🧻", "kéztörlő": "🧻", "szalvéta": "🧻", "alufólia": "📦",
+    "folpack": "📦", "fólia": "📦", "sütőpapír": "📦", "szemeteszsák": "🗑️", "szemetes zsák": "🗑️",
+    "zacskó": "🛍️", "uzsonnás zacskó": "🛍️", "fagyasztótasak": "🛍️", "elem": "🔋", "akkumulátor": "🔋",
+    "izzó": "💡", "villanykörte": "💡", "égő": "💡", "gyertya": "🕯️", "mécses": "🕯️", "gyufa": "🔥",
+    "öngyújtó": "🔥", "macskaeledel": "🐈", "macskaalom": "🐈", "alom": "🐈", "kutyaeledel": "🐕",
+    "kutyatáp": "🐕", "állateledel": "🐾", "jutalomfalat": "🐾", "virágföld": "🌱", "mosogatókesztyű": "🧤",
+    "gumikesztyű": "🧤", "ragasztó": "📦", "ruhacsipesz": "📦", "tisztítókendő": "🧽", "mikroszálas kendő": "🧽",
+    "törlőkendő": "🧽", "porszívózsák": "📦", "hűtőmágnes": "📦", "konyharuha": "🧽", "tányér": "🍽️",
+    "pohár": "🥛", "evőeszköz": "🍴", "szívószál": "🥤", "uzsonnás doboz": "📦", "doboz": "📦"
+  },
+  "egyeb": {
+    "csomag": "📦", "csomagfelvétel": "📦", "küldemény": "📦", "visszaküldés": "📦", "levél": "✉️",
+    "ajándék": "🎁", "virág": "💐", "csokor": "💐", "újság": "📰", "magazin": "📰", "cigaretta": "🚬",
+    "dohány": "🚬", "bérlet": "🎟️", "jegy": "🎟️", "ruha": "👕", "zokni": "🧦", "póló": "👕", "cipő": "👟",
+    "játék": "🧸", "töltő": "🔌", "kábel": "🔌", "füzet": "📓", "toll": "🖊️", "ceruza": "✏️", "papír": "📄",
+    "boríték": "✉️", "képeslap": "💌", "szerszám": "🔧", "csavar": "🔩"
+  }
+}
