@@ -10,9 +10,12 @@ Ezeket a lépéseket neked kell elvégezned, mert a saját Google-fiókodhoz kö
    - Becenév: Adamazon
    - **SHA-1 (debug)**: `C9:FF:73:0B:0A:77:C1:9D:B2:4D:2E:78:A3:EC:29:6C:64:55:96:B7`
      (ez a gépeden lévő debug kulcsé, az Android Studióból futtatott apphoz kell)
-3. Töltsd le a `google-services.json` fájlt, és **cseréld le vele** a projektben lévő `app/google-services.json` helykitöltőt.
+3. Töltsd le a `google-services.json` fájlt, és másold az `app/` mappába (`app/google-services.json`).
+   - A fájl **nincs a gitben** (`.gitignore`), így nem kerül fel GitHubra. Új gépen vagy friss klónozás után
+     innen kell újra letölteni: Projektbeállítások (fogaskerék) → Általános → Saját alkalmazások → **google-services.json**.
+     Nélküle a build hibával leáll („File google-services.json is missing”).
 4. **Authentication** → Kezdés → Bejelentkezési módok → **Google** → Engedélyezés → támogatási e-mail: a saját címed → Mentés.
-   - Ezután töltsd le újra a `google-services.json`-t (most már benne lesz a webes kliensazonosító), és cseréld le ismét.
+   - Ezután töltsd le újra a `google-services.json`-t (most már benne lesz a webes kliensazonosító, `"client_type": 3`), és cseréld le ismét.
 5. **Firestore Database** → Adatbázis létrehozása → hely: `eur3 (europe-west)` → **éles módban** (production mode) indítsd.
 
 ## 2. Biztonsági szabályok telepítése
@@ -30,7 +33,7 @@ firebase login
 ```bash
 firebase use --add
 ```
-(válaszd ki az előbb létrehozott projektet, alias: `default`)
+(válaszd ki az előbb létrehozott projektet, alias: `default`; a választás a helyi `.firebaserc` fájlba kerül, ez sincs a gitben)
 
 ```bash
 firebase deploy --only firestore:rules

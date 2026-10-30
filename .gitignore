@@ -11,3 +11,7 @@ keystore.properties
 node_modules/
 firebase-debug.log
 firestore-debug.log
+
+# Firebase project config: not a secret, but kept out of the repo (see SETUP.md)
+app/google-services.json
+.firebaserc
