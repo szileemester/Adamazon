@@ -12,6 +12,7 @@ import hu.szileemester.adamazon.data.LearnedRepository
 import hu.szileemester.adamazon.data.LogoFetcher
 import hu.szileemester.adamazon.data.StorePresets
 import hu.szileemester.adamazon.data.StoreRepository
+import hu.szileemester.adamazon.data.ThemeSettings
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.DictionaryParser
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ class AppContainer(app: Application) {
     val learned = LearnedRepository(db)
     val cards = CardRepository(db)
 
+    val theme = ThemeSettings(app)
     val images = ImageCompressor(app.contentResolver)
     val logos = LogoFetcher()
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +27,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,6 +51,7 @@ import androidx.lifecycle.viewModelScope
 import hu.szileemester.adamazon.AppContainer
 import hu.szileemester.adamazon.BuildConfigInfo
 import hu.szileemester.adamazon.data.AccessState
+import hu.szileemester.adamazon.data.ThemeMode
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.ui.appViewModel
@@ -82,6 +87,7 @@ class SettingsViewModel(val c: AppContainer) : ViewModel() {
 fun SettingsScreen(bottomBar: @Composable () -> Unit) {
     val vm = appViewModel { SettingsViewModel(it) }
     val categories by vm.categories.collectAsStateWithLifecycle()
+    val themeMode by vm.c.theme.mode.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Category?>(null) }
@@ -113,6 +119,20 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
                         }
                     },
                 )
+                HorizontalDivider()
+                Column(Modifier.padding(16.dp)) {
+                    Text("Megjelenés", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        ThemeMode.entries.forEachIndexed { index, mode ->
+                            SegmentedButton(
+                                selected = themeMode == mode,
+                                onClick = { vm.c.theme.set(mode) },
+                                shape = SegmentedButtonDefaults.itemShape(index, ThemeMode.entries.size),
+                            ) { Text(mode.label) }
+                        }
+                    }
+                }
                 HorizontalDivider()
                 Column(Modifier.padding(16.dp)) {
                     Text("Kategóriák", style = MaterialTheme.typography.titleMedium)

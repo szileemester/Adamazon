@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +40,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -133,13 +136,9 @@ fun StoreListScreen(
                 ),
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) },
-    ) { padding ->
-        LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp),
-        ) {
-            item(key = "input") {
+        // Quick-add sits at the bottom, within thumb reach, and rides above the keyboard.
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
                 QuickAdd(
                     value = input,
                     onValueChange = { input = it },
@@ -152,8 +151,16 @@ fun StoreListScreen(
                         vm.add(it)
                         input = ""
                     },
+                    modifier = Modifier.navigationBarsPadding().imePadding(),
                 )
             }
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
             if (state.loaded && state.sections.isEmpty()) {
                 item(key = "empty") {
                     Text(
@@ -230,8 +237,15 @@ private fun QuickAdd(
     onSubmit: () -> Unit,
     suggestions: List<String>,
     onSuggestion: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+    Column(modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        // Suggestions above the field, so they stay visible right over the keyboard.
+        if (suggestions.isNotEmpty()) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                items(suggestions) { s -> SuggestionChip(onClick = { onSuggestion(s) }, label = { Text(s) }) }
+            }
+        }
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -243,11 +257,6 @@ private fun QuickAdd(
             // Keyboard stays open so several items can be typed in a row.
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
         )
-        if (suggestions.isNotEmpty()) {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                items(suggestions) { s -> SuggestionChip(onClick = { onSuggestion(s) }, label = { Text(s) }) }
-            }
-        }
     }
 }
 

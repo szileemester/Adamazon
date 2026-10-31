@@ -1,5 +1,6 @@
 <resources>
-    <style name="Theme.Adamazon" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+    <!-- Dark by default (the app's default theme); Compose switches to light if the user picks it. -->
+    <style name="Theme.Adamazon" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF121316</item>
     </style>
 </resources>

@@ -8,6 +8,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import hu.szileemester.adamazon.data.ThemeMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
@@ -24,10 +27,19 @@ private val DarkColors = darkColorScheme(
     tertiary = Color(0xFFFFB74D),
 )
 
+/** Whether the app is currently drawn dark – follows the user's choice, not only the system. */
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
+@Composable
+fun ThemeMode.isDark(): Boolean = when (this) {
+    ThemeMode.DARK -> true
+    ThemeMode.LIGHT -> false
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+}
+
 /** Material You colours on Android 12+, the app's blue scheme before that. */
 @Composable
-fun AdamazonTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+fun AdamazonTheme(dark: Boolean, content: @Composable () -> Unit) {
     val colors = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -36,7 +48,9 @@ fun AdamazonTheme(content: @Composable () -> Unit) {
         dark -> DarkColors
         else -> LightColors
     }
-    MaterialTheme(colorScheme = colors, content = content)
+    CompositionLocalProvider(LocalDarkTheme provides dark) {
+        MaterialTheme(colorScheme = colors, content = content)
+    }
 }
 
 /** Keep-style note colours; 0 means "no colour". */
@@ -52,5 +66,5 @@ fun storeContainerColor(argb: Long): Color {
     val surface = MaterialTheme.colorScheme.surfaceContainerHigh
     if (argb == 0L) return surface
     val color = Color(argb)
-    return if (isSystemInDarkTheme()) lerp(color, surface, 0.72f) else color
+    return if (LocalDarkTheme.current) lerp(color, surface, 0.72f) else color
 }
