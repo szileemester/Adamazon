@@ -54,10 +54,12 @@ data class LoyaltyCard(
     val storeId: String? = null,
     val thumb: ByteArray? = null,
     val sortIndex: Int = 0,
+    /** Read from the card photo; null if none was found. */
+    val barcode: CardBarcode? = null,
 ) {
     override fun equals(other: Any?): Boolean =
         other is LoyaltyCard && id == other.id && name == other.name && storeId == other.storeId &&
-            thumb.contentEqualsNullable(other.thumb) && sortIndex == other.sortIndex
+            thumb.contentEqualsNullable(other.thumb) && sortIndex == other.sortIndex && barcode == other.barcode
 
     override fun hashCode(): Int = id.hashCode() * 31 + name.hashCode()
 }

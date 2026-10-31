@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import hu.szileemester.adamazon.data.AuthRepository
+import hu.szileemester.adamazon.data.BarcodeReader
 import hu.szileemester.adamazon.data.CardRepository
 import hu.szileemester.adamazon.data.CategoryRepository
 import hu.szileemester.adamazon.data.ImageCompressor
@@ -36,6 +37,7 @@ class AppContainer(app: Application) {
     val theme = ThemeSettings(app)
     val images = ImageCompressor(app.contentResolver)
     val logos = LogoFetcher()
+    val barcodes = BarcodeReader(app)
 
     val categorizer: Categorizer by lazy {
         Categorizer(DictionaryParser.parse(app.assets.open("dictionary.json").bufferedReader().use { it.readText() }))

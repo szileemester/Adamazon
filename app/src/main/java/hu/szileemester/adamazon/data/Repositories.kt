@@ -2,7 +2,9 @@ package hu.szileemester.adamazon.data
 
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
+import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Item
@@ -193,37 +195,29 @@ class CardRepository(private val db: FirebaseFirestore) {
     fun card(id: String): Flow<LoyaltyCard?> =
         collection.document(id).snapshotFlow().map { if (it.exists()) it.toCard() else null }
 
-    /** Front and back images; null entries are sides without an image. */
-    fun images(id: String): Flow<Map<CardSide, ByteArray>> =
-        collection.document(id).collection("images").snapshotFlow().map { s ->
-            s.documents.mapNotNull { doc ->
-                val side = CardSide.entries.firstOrNull { it.docId == doc.id } ?: return@mapNotNull null
-                doc.getBlob("data")?.let { side to it.toBytes() }
-            }.toMap()
-        }
+    /** The card's photo, or null while it has none. */
+    fun image(id: String): Flow<ByteArray?> =
+        collection.document(id).collection("images").document(IMAGE_DOC).snapshotFlow()
+            .map { it.getBlob("data")?.toBytes() }
 
-    /**
-     * Creates or updates a card. For each side in [images] a null value removes the image,
-     * sides missing from the map are left unchanged.
-     */
-    fun save(
-        id: String?,
-        name: String,
-        storeId: String?,
-        sortIndex: Int,
-        thumb: ByteArray?,
-        images: Map<CardSide, ByteArray?>,
-    ): String {
+    /** A newly picked photo with everything derived from it. */
+    class NewImage(val image: ByteArray, val thumb: ByteArray, val barcode: CardBarcode?)
+
+    /** Creates or updates a card; without [newImage] the current photo and barcode stay. */
+    fun save(id: String?, name: String, storeId: String?, sortIndex: Int, newImage: NewImage?): String {
         val doc = if (id == null) collection.document() else collection.document(id)
         val batch = db.batch()
         val fields = mutableMapOf<String, Any?>("name" to name, "storeId" to storeId)
         if (id == null) fields["sortIndex"] = sortIndex
-        if (thumb != null) fields["thumb"] = thumb.toBlob()
-        batch.set(doc, fields, com.google.firebase.firestore.SetOptions.merge())
-        images.forEach { (side, bytes) ->
-            val imageDoc = doc.collection("images").document(side.docId)
-            if (bytes == null) batch.delete(imageDoc) else batch.set(imageDoc, mapOf("data" to bytes.toBlob()))
+        if (newImage != null) {
+            fields["thumb"] = newImage.thumb.toBlob()
+            fields["barcodeValue"] = newImage.barcode?.value
+            fields["barcodeFormat"] = newImage.barcode?.format
+            batch.set(doc.collection("images").document(IMAGE_DOC), mapOf("data" to newImage.image.toBlob()))
+            // Cards used to have a back side; drop any leftover.
+            batch.delete(doc.collection("images").document(LEGACY_BACK_DOC))
         }
+        batch.set(doc, fields, SetOptions.merge())
         batch.commit()
         return doc.id
     }
@@ -237,10 +231,13 @@ class CardRepository(private val db: FirebaseFirestore) {
     fun delete(id: String) {
         val doc = collection.document(id)
         val batch = db.batch()
-        CardSide.entries.forEach { batch.delete(doc.collection("images").document(it.docId)) }
+        listOf(IMAGE_DOC, LEGACY_BACK_DOC).forEach { batch.delete(doc.collection("images").document(it)) }
         batch.delete(doc)
         batch.commit()
     }
-}
 
-enum class CardSide(val docId: String) { FRONT("front"), BACK("back") }
+    private companion object {
+        const val IMAGE_DOC = "front"
+        const val LEGACY_BACK_DOC = "back"
+    }
+}

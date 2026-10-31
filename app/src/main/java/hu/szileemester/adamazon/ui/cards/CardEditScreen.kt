@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,7 +57,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
 import hu.szileemester.adamazon.AppContainer
-import hu.szileemester.adamazon.data.CardSide
+import hu.szileemester.adamazon.data.CardRepository
+import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
@@ -67,37 +69,29 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** An image slot: unchanged from Firestore, newly picked, or removed. */
+/** The photo shown in the editor: the saved one, or a newly picked one with its scan result. */
 sealed interface CardImage {
-    data class Saved(val bytes: ByteArray) : CardImage
-    data class Picked(val uri: Uri) : CardImage
+    data class Saved(val bytes: ByteArray, val barcode: CardBarcode?) : CardImage
+    data class Picked(val uri: Uri, val scanning: Boolean, val barcode: CardBarcode?) : CardImage
     data object None : CardImage
 }
 
 class CardEditViewModel(private val c: AppContainer, private val cardId: String?) : ViewModel() {
     val stores = c.stores.stores.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    suspend fun load(): Pair<LoyaltyCard?, Map<CardSide, ByteArray>> {
-        if (cardId == null) return null to emptyMap()
-        val card = c.cards.card(cardId).first()
-        val images = c.cards.images(cardId).first()
-        return card to images
+    suspend fun load(): Pair<LoyaltyCard?, ByteArray?> {
+        if (cardId == null) return null to null
+        return c.cards.card(cardId).first() to c.cards.image(cardId).first()
     }
 
-    suspend fun save(name: String, storeId: String?, front: CardImage, back: CardImage) {
-        val images = mutableMapOf<CardSide, ByteArray?>()
-        var thumb: ByteArray? = null
-        if (front is CardImage.Picked) {
-            images[CardSide.FRONT] = c.images.cardImage(front.uri)
-            thumb = c.images.thumbnail(front.uri)
-        }
-        when (back) {
-            is CardImage.Picked -> images[CardSide.BACK] = c.images.cardImage(back.uri)
-            CardImage.None -> images[CardSide.BACK] = null
-            is CardImage.Saved -> Unit
+    suspend fun scan(uri: Uri): CardBarcode? = c.barcodes.read(uri)
+
+    suspend fun save(name: String, storeId: String?, image: CardImage) {
+        val newImage = (image as? CardImage.Picked)?.let {
+            CardRepository.NewImage(c.images.cardImage(it.uri), c.images.thumbnail(it.uri), it.barcode)
         }
         val count = c.cards.cards.first().size
-        c.cards.save(cardId, name, storeId, sortIndex = count, thumb = thumb, images = images)
+        c.cards.save(cardId, name, storeId, sortIndex = count, newImage = newImage)
     }
 
     fun delete() = cardId?.let(c.cards::delete)
@@ -114,22 +108,30 @@ fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
     var loaded by remember { mutableStateOf(cardId == null) }
     var name by remember { mutableStateOf("") }
     var storeId by remember { mutableStateOf<String?>(null) }
-    var front by remember { mutableStateOf<CardImage>(CardImage.None) }
-    var backImage by remember { mutableStateOf<CardImage>(CardImage.None) }
+    var image by remember { mutableStateOf<CardImage>(CardImage.None) }
     var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(cardId) {
         if (cardId == null) return@LaunchedEffect
-        val (card, images) = vm.load()
+        val (card, bytes) = vm.load()
         name = card?.name.orEmpty()
         storeId = card?.storeId
-        images[CardSide.FRONT]?.let { front = CardImage.Saved(it) }
-        images[CardSide.BACK]?.let { backImage = CardImage.Saved(it) }
+        bytes?.let { image = CardImage.Saved(it, card?.barcode) }
         loaded = true
     }
 
+    fun picked(uri: Uri) {
+        image = CardImage.Picked(uri, scanning = true, barcode = null)
+        scope.launch {
+            val barcode = vm.scan(uri)
+            // Ignore the result if another photo was picked meanwhile.
+            if ((image as? CardImage.Picked)?.uri == uri) image = CardImage.Picked(uri, scanning = false, barcode = barcode)
+        }
+    }
+
+    val scanning = (image as? CardImage.Picked)?.scanning == true
     Scaffold(
         topBar = {
             TopAppBar(
@@ -142,11 +144,11 @@ fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
                         CircularProgressIndicator(Modifier.padding(12.dp))
                     } else {
                         IconButton(
-                            enabled = loaded && name.isNotBlank() && front != CardImage.None,
+                            enabled = loaded && name.isNotBlank() && image != CardImage.None && !scanning,
                             onClick = {
                                 saving = true
                                 scope.launch {
-                                    runCatching { vm.save(name.trim(), storeId, front, backImage) }
+                                    runCatching { vm.save(name.trim(), storeId, image) }
                                         .onSuccess { back() }
                                         .onFailure {
                                             error = "Nem sikerült menteni: ${it.message}"
@@ -167,8 +169,8 @@ fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
         ) {
             OutlinedTextField(name, { name = it }, label = { Text("Név, pl. Auchan kártya") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             StorePicker(stores, storeId) { storeId = it }
-            ImageSlot("Előlap (kötelező)", front, context, onChange = { front = it }, removable = false)
-            ImageSlot("Hátlap (nem kötelező)", backImage, context, onChange = { backImage = it }, removable = true)
+            ImageSlot(image, context, onPicked = ::picked)
+            BarcodeStatus(image)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (cardId != null) {
                 TextButton(onClick = { confirmDelete = true }) { Text("Kártya törlése", color = MaterialTheme.colorScheme.error) }
@@ -179,13 +181,39 @@ fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
     if (confirmDelete) {
         ConfirmDialog(
             title = "Törlöd a kártyát?",
-            text = "A kártya képei véglegesen törlődnek mindkettőtöknél.",
+            text = "A kártya képe véglegesen törlődik mindkettőtöknél.",
             confirmLabel = "Törlés",
             onDismiss = { confirmDelete = false },
             onConfirm = {
                 vm.delete()
                 deleted()
             },
+        )
+    }
+}
+
+@Composable
+private fun BarcodeStatus(image: CardImage) {
+    val (scanning, barcode) = when (image) {
+        is CardImage.Picked -> image.scanning to image.barcode
+        is CardImage.Saved -> false to image.barcode
+        CardImage.None -> return
+    }
+    when {
+        scanning -> Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(12.dp))
+            Text("Vonalkód keresése a képen…")
+        }
+        barcode != null -> Column {
+            Text("Felismert vonalkód (${barcode.label}) – a pénztárnál ez jelenik meg:", style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.size(8.dp))
+            BarcodeView(barcode, Modifier.fillMaxWidth())
+        }
+        else -> Text(
+            "Nem találtam vonalkódot a képen, ezért a pénztárnál maga a kép jelenik meg. " +
+                "Élesebb, egyenesen fotózott kép segíthet.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -209,23 +237,17 @@ private fun StorePicker(stores: List<Store>, selectedId: String?, onSelect: (Str
 }
 
 @Composable
-private fun ImageSlot(
-    label: String,
-    image: CardImage,
-    context: Context,
-    onChange: (CardImage) -> Unit,
-    removable: Boolean,
-) {
+private fun ImageSlot(image: CardImage, context: Context, onPicked: (Uri) -> Unit) {
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let { onChange(CardImage.Picked(it)) }
+        uri?.let(onPicked)
     }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (ok) cameraUri?.let { onChange(CardImage.Picked(it)) }
+        if (ok) cameraUri?.let(onPicked)
     }
 
     Column {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Text("Kártya képe", style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.padding(top = 4.dp))
         Box(
             Modifier
@@ -255,9 +277,6 @@ private fun ImageSlot(
                 Icon(Icons.Default.PhotoCamera, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text("Fénykép")
-            }
-            if (removable && image != CardImage.None) {
-                TextButton(onClick = { onChange(CardImage.None) }) { Text("Eltávolítás") }
             }
         }
     }

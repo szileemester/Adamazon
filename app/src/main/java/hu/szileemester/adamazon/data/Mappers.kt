@@ -2,6 +2,7 @@ package hu.szileemester.adamazon.data
 
 import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.DocumentSnapshot
+import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.LearnedMapping
@@ -85,6 +86,9 @@ fun DocumentSnapshot.toCard() = LoyaltyCard(
     storeId = getString("storeId"),
     thumb = getBlob("thumb")?.toBytes(),
     sortIndex = getLong("sortIndex")?.toInt() ?: 0,
+    barcode = getString("barcodeValue")?.let { value ->
+        getString("barcodeFormat")?.let { format -> CardBarcode(value, format) }
+    },
 )
 
 fun ByteArray.toBlob(): Blob = Blob.fromBytes(this)
