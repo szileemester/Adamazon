@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import hu.szileemester.adamazon.domain.BarcodeEncoder
 import hu.szileemester.adamazon.domain.CardBarcode
 
-/** The card's code redrawn black on white, with its number underneath – what the till scans. */
+/** The card's code redrawn black on white – what the till scans – optionally with its number. */
 @Composable
-fun BarcodeView(barcode: CardBarcode, modifier: Modifier = Modifier) {
+fun BarcodeView(barcode: CardBarcode, modifier: Modifier = Modifier, showValue: Boolean = true) {
     val bitmap = remember(barcode) { render(barcode) }
     Column(
         modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(20.dp),
@@ -42,12 +42,14 @@ fun BarcodeView(barcode: CardBarcode, modifier: Modifier = Modifier) {
                     .aspectRatio(if (barcode.isSquare) 1f else 2.6f),
             )
         }
-        Text(
-            barcode.value,
-            color = Color.Black,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = 12.dp),
-        )
+        if (showValue) {
+            Text(
+                barcode.value,
+                color = Color.Black,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
     }
 }
 

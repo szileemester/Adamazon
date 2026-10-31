@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -47,6 +48,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +57,7 @@ import hu.szileemester.adamazon.AppContainer
 import hu.szileemester.adamazon.data.CategoryRepository
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.CategoryOrder
+import hu.szileemester.adamazon.domain.Normalizer
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.ColorPicker
@@ -153,7 +156,7 @@ private fun StoreSettingsContent(
                     IconButton(
                         enabled = name.isNotBlank(),
                         onClick = {
-                            vm.save(name.trim(), domain.trim().ifBlank { null }, color)
+                            vm.save(Normalizer.clean(name), domain.trim().ifBlank { null }, color)
                             back()
                         },
                     ) { Icon(Icons.Default.Check, contentDescription = "Mentés") }
@@ -169,7 +172,13 @@ private fun StoreSettingsContent(
         ) {
             item(key = "details") {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(name, { name = it }, label = { Text("Név") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        name, { name = it },
+                        label = { Text("Név") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     OutlinedTextField(
                         domain, { domain = it },
                         label = { Text("Weboldal (a logóhoz)") },

@@ -1,25 +1,20 @@
 package hu.szileemester.adamazon.ui.cards
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -31,20 +26,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import coil3.compose.AsyncImage
 import hu.szileemester.adamazon.AppContainer
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.StoreLogo
+import hu.szileemester.adamazon.ui.theme.storeContainerColor
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -93,31 +87,31 @@ fun CardsScreen(bottomBar: @Composable () -> Unit, openCard: (String) -> Unit, n
 
 @Composable
 private fun CardTile(card: LoyaltyCard, store: Store?, onClick: () -> Unit) {
-    Card(onClick = onClick) {
-        Column {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(CARD_RATIO)
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (card.thumb != null) {
-                    AsyncImage(card.thumb, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                } else {
-                    Icon(Icons.Default.CreditCard, contentDescription = null)
-                }
-            }
-            Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (store != null) {
-                    StoreLogo(store, size = 24.dp)
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text(card.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
-            }
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = storeContainerColor(store?.colorArgb ?: 0L)),
+    ) {
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = 20.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            CardLogo(card, store, size = 56.dp)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                card.name,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+            )
         }
     }
+}
+
+/** The linked store's logo, or the card's initial when it belongs to no store. */
+@Composable
+fun CardLogo(card: LoyaltyCard, store: Store?, size: Dp) {
+    StoreLogo(store ?: Store(id = card.id, name = card.name), size = size)
 }
 
 /** Standard ID-1 card proportions (85.6 × 54 mm). */
