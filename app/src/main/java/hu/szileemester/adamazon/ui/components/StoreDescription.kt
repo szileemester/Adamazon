@@ -18,8 +18,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import hu.szileemester.adamazon.domain.Links
 import hu.szileemester.adamazon.domain.Store
 
 /** Text field for a store's short description, capped at [Store.DESCRIPTION_MAX] with a counter. */
@@ -38,6 +45,22 @@ fun StoreDescriptionField(value: String, onValueChange: (String) -> Unit, modifi
     )
 }
 
+/** The text with its web links underlined and tappable (they open in the browser). */
+@Composable
+private fun linkified(text: String): AnnotatedString {
+    val linkStyle = TextLinkStyles(
+        SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline),
+    )
+    return remember(text, linkStyle) {
+        buildAnnotatedString {
+            append(text)
+            Links.find(text).forEach { link ->
+                addLink(LinkAnnotation.Url(link.url, linkStyle), link.range.first, link.range.last + 1)
+            }
+        }
+    }
+}
+
 /** Shows a store's description; "Szerkesztés" turns it into an editable field in place. */
 @Composable
 fun StoreDescriptionDialog(store: Store, onDismiss: () -> Unit, onSave: (String?) -> Unit) {
@@ -53,7 +76,7 @@ fun StoreDescriptionDialog(store: Store, onDismiss: () -> Unit, onSave: (String?
                 if (editing) {
                     StoreDescriptionField(text, { text = it })
                 } else {
-                    Text(store.description.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+                    Text(linkified(store.description.orEmpty()), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         },
