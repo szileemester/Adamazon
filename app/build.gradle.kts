@@ -18,8 +18,11 @@ android {
         versionName = "0.1.0"
     }
 
-    // Upload key for Google Play; keystore.properties is git-ignored (see SETUP.md).
-    val keystoreProperties = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
+    // Upload key for Google Play; .secrets/ and keystore.properties are git-ignored (see SETUP.md).
+    val keystoreFile = listOf(".secrets/keystore.properties", "keystore.properties")
+        .map { rootProject.file(it) }
+        .firstOrNull { it.exists() }
+    val keystoreProperties = keystoreFile?.let { file ->
         Properties().apply { file.inputStream().use { load(it) } }
     }
     signingConfigs {

@@ -54,13 +54,14 @@ Az első belépéskor az app létrehozza az alapkategóriákat.
 
 ## 5. Google Play – belső tesztelés
 
-1. Feltöltési kulcs létrehozása (egyszer; a jelszót **jegyezd fel biztonságos helyre**, a fájlról legyen mentés):
+1. Feltöltési kulcs létrehozása (egyszer; a jelszót **jegyezd fel biztonságos helyre**, a fájlról legyen mentés).
+   A titkok helye a projektben a `.secrets\` mappa, amit a git soha nem követ:
    ```bash
-   "C:\Program Files\Android\Android Studio\jbr\bin\keytool" -genkeypair -v -keystore D:\Claude\adamazon-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   "C:\Program Files\Android\Android Studio\jbr\bin\keytool" -genkeypair -v -keystore D:\Claude\Adamazon\.secrets\adamazon-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
    ```
-2. Hozd létre a `D:\Claude\Adamazon\keystore.properties` fájlt (git nem követi):
+2. Hozd létre a `D:\Claude\Adamazon\.secrets\keystore.properties` fájlt (az útvonal a projekt gyökeréhez képest értendő):
    ```
-   storeFile=../adamazon-upload.jks
+   storeFile=.secrets/adamazon-upload.jks
    storePassword=<a jelszavad>
    keyAlias=upload
    keyPassword=<a jelszavad>
