@@ -55,7 +55,7 @@ import hu.szileemester.adamazon.data.ThemeMode
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.ui.appViewModel
-import hu.szileemester.adamazon.ui.components.EmojiPickerDialog
+import hu.szileemester.adamazon.ui.components.CategoryDialog
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -68,11 +68,7 @@ class SettingsViewModel(val c: AppContainer) : ViewModel() {
 
     fun save(category: Category) {
         if (category.id.isEmpty()) {
-            // New categories go right before "Egyéb", which stays last.
-            val others = categories.value.filter { it.id != Categorizer.FALLBACK_CATEGORY_ID }
-            c.categories.add(category.name, category.emoji, sortIndex = others.size)
-            categories.value.firstOrNull { it.id == Categorizer.FALLBACK_CATEGORY_ID }
-                ?.let { c.categories.update(it.copy(sortIndex = others.size + 1)) }
+            c.categories.add(category.name, category.emoji, categories.value)
         } else {
             c.categories.update(category)
         }
@@ -180,6 +176,7 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
     editing?.let { category ->
         CategoryDialog(
             category = category,
+            existing = categories,
             onDismiss = { editing = null },
             onSave = {
                 vm.save(it)
@@ -192,46 +189,5 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
                 }
             } else null,
         )
-    }
-}
-
-@Composable
-private fun CategoryDialog(category: Category, onDismiss: () -> Unit, onSave: (Category) -> Unit, onDelete: (() -> Unit)?) {
-    var name by remember { mutableStateOf(category.name) }
-    var emoji by remember { mutableStateOf(category.emoji) }
-    var picking by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (category.id.isEmpty()) "Új kategória" else "Kategória") },
-        text = {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.size(64.dp)) { Text(emoji, fontSize = 24.sp) }
-                    Spacer(Modifier.width(12.dp))
-                    OutlinedTextField(name, { name = it }, label = { Text("Név") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                }
-                if (onDelete != null) {
-                    Text(
-                        "Törléskor az ide tartozó elemek az „Egyéb” csoportba kerülnek.",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onSave(category.copy(name = name.trim(), emoji = emoji)) }) { Text("Mentés") }
-        },
-        dismissButton = {
-            Row {
-                onDelete?.let { TextButton(onClick = it) { Text("Törlés", color = MaterialTheme.colorScheme.error) } }
-                TextButton(onClick = onDismiss) { Text("Mégse") }
-            }
-        },
-    )
-
-    if (picking) {
-        EmojiPickerDialog(emoji, onDismiss = { picking = false }, onPick = { emoji = it; picking = false })
     }
 }

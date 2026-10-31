@@ -35,8 +35,17 @@ class CategoryRepository(private val db: FirebaseFirestore) {
         batch.commit().await()
     }
 
-    fun add(name: String, emoji: String, sortIndex: Int) {
-        collection.add(Category("", name, emoji, sortIndex).toMap())
+    /** Adds a category right before "Egyéb" (which stays last) and returns its id. */
+    fun add(name: String, emoji: String, existing: List<Category>): String {
+        val doc = collection.document()
+        val others = existing.filter { it.id != Categorizer.FALLBACK_CATEGORY_ID }
+        val batch = db.batch()
+        batch.set(doc, Category(doc.id, name, emoji, others.size).toMap())
+        existing.firstOrNull { it.id == Categorizer.FALLBACK_CATEGORY_ID }?.let {
+            batch.set(collection.document(it.id), it.copy(sortIndex = others.size + 1).toMap())
+        }
+        batch.commit()
+        return doc.id
     }
 
     fun update(category: Category) {
@@ -141,8 +150,21 @@ class ItemRepository(private val db: FirebaseFirestore) {
     fun itemsOf(storeId: String): Flow<List<Item>> =
         items(storeId).orderBy("createdAt").snapshotFlow().map { s -> s.documents.map { it.toItem() } }
 
-    fun add(storeId: String, item: Item) {
-        items(storeId).add(item.toMap())
+    /** Adds the item and returns its new id. */
+    fun add(storeId: String, item: Item): String {
+        val doc = items(storeId).document()
+        doc.set(item.toMap())
+        return doc.id
+    }
+
+    /** Puts items back to an earlier state: null means the item did not exist, so it is deleted. */
+    fun revert(storeId: String, before: Map<String, Item?>) {
+        val batch = db.batch()
+        before.forEach { (id, item) ->
+            val doc = items(storeId).document(id)
+            if (item == null) batch.delete(doc) else batch.set(doc, item.toMap())
+        }
+        batch.commit()
     }
 
     fun update(storeId: String, item: Item) {

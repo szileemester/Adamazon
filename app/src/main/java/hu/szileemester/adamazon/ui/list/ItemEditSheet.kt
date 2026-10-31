@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -37,7 +39,10 @@ import androidx.compose.ui.unit.sp
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.Normalizer
+import hu.szileemester.adamazon.ui.components.CategoryDialog
 import hu.szileemester.adamazon.ui.components.EmojiPickerDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +50,7 @@ fun ItemEditSheet(
     item: Item,
     categories: List<Category>,
     onDismiss: () -> Unit,
+    onCreateCategory: (name: String, emoji: String) -> String,
     onSave: (Item) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -53,6 +59,14 @@ fun ItemEditSheet(
     var categoryId by remember { mutableStateOf(item.categoryId) }
     var emoji by remember { mutableStateOf(item.emoji) }
     var pickingEmoji by remember { mutableStateOf(false) }
+    var creatingCategory by remember { mutableStateOf(false) }
+
+    fun selectCategory(id: String, categoryEmoji: String) {
+        // Keep a custom icon, but follow the category if the icon was the category's own.
+        val old = categories.firstOrNull { it.id == categoryId }
+        if (old == null || emoji == old.emoji || emoji.isBlank()) emoji = categoryEmoji
+        categoryId = id
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
@@ -90,15 +104,15 @@ fun ItemEditSheet(
                 categories.forEach { category ->
                     FilterChip(
                         selected = category.id == categoryId,
-                        onClick = {
-                            // Keep a custom icon, but follow the category if the icon was the category's own.
-                            val old = categories.firstOrNull { it.id == categoryId }
-                            if (old == null || emoji == old.emoji || emoji.isBlank()) emoji = category.emoji
-                            categoryId = category.id
-                        },
+                        onClick = { selectCategory(category.id, category.emoji) },
                         label = { Text("${category.emoji} ${category.name}") },
                     )
                 }
+                AssistChip(
+                    onClick = { creatingCategory = true },
+                    label = { Text("Új kategória") },
+                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, Modifier.size(18.dp)) },
+                )
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -120,6 +134,18 @@ fun ItemEditSheet(
                 ) { Text("Mentés") }
             }
         }
+    }
+
+    if (creatingCategory) {
+        CategoryDialog(
+            category = Category("", "", "🛒", 0),
+            existing = categories,
+            onDismiss = { creatingCategory = false },
+            onSave = { new ->
+                selectCategory(onCreateCategory(new.name, new.emoji), new.emoji)
+                creatingCategory = false
+            },
+        )
     }
 
     if (pickingEmoji) {

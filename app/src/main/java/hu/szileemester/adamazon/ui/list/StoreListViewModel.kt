@@ -13,14 +13,18 @@ import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.LearnedMapping
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Store
+import hu.szileemester.adamazon.domain.UndoEntry
+import hu.szileemester.adamazon.domain.UndoHistory
 import hu.szileemester.adamazon.domain.decideAddItem
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 
 data class Section(val category: Category, val items: List<Item>)
 
@@ -37,6 +41,7 @@ data class StoreListState(
 sealed interface ListEvent {
     data class AlreadyOnList(val name: String) : ListEvent
     data class Deleted(val item: Item) : ListEvent
+    data class Undone(val label: String) : ListEvent
 }
 
 class StoreListViewModel(private val c: AppContainer, private val storeId: String) : ViewModel() {
@@ -70,18 +75,37 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
     private val userEmail: String?
         get() = (c.auth.state.value as? AccessState.Allowed)?.user?.email
 
+    // In-memory, per screen: guards against mis-taps, not a full history. Learning side effects
+    // (category order, learned categories) are deliberately not reverted.
+    private val _undo = MutableStateFlow(UndoHistory())
+    val canUndo: StateFlow<Boolean> = _undo.map { it.canUndo }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private fun record(label: String, before: Map<String, Item?>) {
+        _undo.update { it.push(UndoEntry(label, before)) }
+    }
+
+    fun undo() {
+        val (entry, rest) = _undo.value.pop() ?: return
+        _undo.value = rest
+        c.items.revert(storeId, entry.before)
+        _events.trySend(ListEvent.Undone(entry.label))
+    }
+
     fun add(input: String) {
         val current = state.value
         when (val decision = decideAddItem(input, current.items)) {
             null -> Unit
             is AddItemDecision.AlreadyOnList -> _events.trySend(ListEvent.AlreadyOnList(decision.item.name))
-            is AddItemDecision.Restore ->
+            is AddItemDecision.Restore -> {
+                record("„${decision.item.name}” felvétele", mapOf(decision.item.id to decision.item))
                 c.items.restore(storeId, decision.item.id, decision.quantity, System.currentTimeMillis())
+            }
             is AddItemDecision.Create -> {
                 val guess = c.categorizer.guess(decision.name, learned.value) { id ->
                     current.categories.firstOrNull { it.id == id }?.emoji
                 }
-                c.items.add(
+                val id = c.items.add(
                     storeId,
                     Item(
                         id = "",
@@ -93,12 +117,14 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
                         createdBy = userEmail,
                     ),
                 )
+                record("„${decision.name}” felvétele", mapOf(id to null))
             }
         }
     }
 
     fun toggle(item: Item) {
         val now = System.currentTimeMillis()
+        record(if (item.checked) "„${item.name}” visszaállítása" else "„${item.name}” kipipálása", mapOf(item.id to item))
         if (item.checked) {
             c.items.setChecked(storeId, item.id, checked = false, now = now)
             return
@@ -117,16 +143,26 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
     }
 
     fun delete(item: Item) {
+        record("„${item.name}” törlése", mapOf(item.id to item))
         c.items.delete(storeId, item.id)
         _events.trySend(ListEvent.Deleted(item))
     }
 
-    fun undoDelete(item: Item) = c.items.update(storeId, item)
+    fun clearChecked() {
+        val checked = state.value.checked
+        if (checked.isEmpty()) return
+        record("Kipipáltak törlése", checked.associateBy { it.id })
+        c.items.deleteAll(storeId, checked.map { it.id })
+    }
 
-    fun clearChecked() = c.items.deleteAll(storeId, state.value.checked.map { it.id })
+    /** Creates a category from the item editor and returns its id, so it can be selected at once. */
+    fun createCategory(name: String, emoji: String): String =
+        c.categories.add(name, emoji, state.value.categories)
 
     /** Saves an edited item; a changed category or icon is remembered for next time. */
     fun save(original: Item, edited: Item) {
+        if (edited == original) return
+        record("„${original.name}” szerkesztése", mapOf(original.id to original))
         c.items.update(storeId, edited)
         if (edited.categoryId != original.categoryId || edited.emoji != original.emoji || edited.key != original.key) {
             c.learned.remember(edited.name, edited.categoryId, edited.emoji)

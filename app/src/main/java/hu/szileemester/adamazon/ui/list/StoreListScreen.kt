@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -21,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -83,6 +86,7 @@ fun StoreListScreen(
     val vm = appViewModel(key = storeId) { StoreListViewModel(it, storeId) }
     val state by vm.state.collectAsStateWithLifecycle()
     val learned by vm.learned.collectAsStateWithLifecycle()
+    val canUndo by vm.canUndo.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Item?>(null) }
@@ -99,7 +103,11 @@ fun StoreListScreen(
                         actionLabel = "Visszavonás",
                         duration = SnackbarDuration.Short,
                     )
-                    if (result == SnackbarResult.ActionPerformed) vm.undoDelete(event.item)
+                    if (result == SnackbarResult.ActionPerformed) vm.undo()
+                }
+                is ListEvent.Undone -> scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar("Visszavonva: ${event.label}", duration = SnackbarDuration.Short)
                 }
             }
         }
@@ -151,6 +159,8 @@ fun StoreListScreen(
                         vm.add(it)
                         input = ""
                     },
+                    canUndo = canUndo,
+                    onUndo = vm::undo,
                     modifier = Modifier.navigationBarsPadding().imePadding(),
                 )
             }
@@ -218,6 +228,7 @@ fun StoreListScreen(
             item = item,
             categories = state.categories,
             onDismiss = { editing = null },
+            onCreateCategory = vm::createCategory,
             onSave = { edited ->
                 vm.save(item, edited)
                 editing = null
@@ -237,6 +248,8 @@ private fun QuickAdd(
     onSubmit: () -> Unit,
     suggestions: List<String>,
     onSuggestion: (String) -> Unit,
+    canUndo: Boolean,
+    onUndo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -246,17 +259,23 @@ private fun QuickAdd(
                 items(suggestions) { s -> SuggestionChip(onClick = { onSuggestion(s) }, label = { Text(s) }) }
             }
         }
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Új elem, pl. 2 kg paradicsom") },
-            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-            // Keyboard stays open so several items can be typed in a row.
-            keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Új elem, pl. 2 kg paradicsom") },
+                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                // Keyboard stays open so several items can be typed in a row.
+                keyboardActions = KeyboardActions(onDone = { onSubmit() }),
+            )
+            Spacer(Modifier.width(4.dp))
+            FilledTonalIconButton(onClick = onUndo, enabled = canUndo, modifier = Modifier.size(52.dp)) {
+                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Utolsó művelet visszavonása")
+            }
+        }
     }
 }
 
