@@ -1,10 +1,13 @@
 package hu.szileemester.adamazon.domain
 
+/** Where an item lives: items can move between stores, so undo needs both ids. */
+data class ItemRef(val storeId: String, val itemId: String)
+
 /**
  * One undoable list change: the state of every touched item before it happened
- * (null = the item did not exist yet, so undoing deletes it).
+ * (null = the item did not exist there yet, so undoing deletes it).
  */
-data class UndoEntry(val label: String, val before: Map<String, Item?>)
+data class UndoEntry(val label: String, val before: Map<ItemRef, Item?>)
 
 /** The last few list changes, newest last; older ones fall off beyond [capacity]. */
 data class UndoHistory(val entries: List<UndoEntry> = emptyList(), val capacity: Int = 5) {

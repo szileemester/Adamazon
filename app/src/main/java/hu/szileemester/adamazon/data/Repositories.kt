@@ -8,6 +8,7 @@ import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Item
+import hu.szileemester.adamazon.domain.ItemRef
 import hu.szileemester.adamazon.domain.LearnedMapping
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Normalizer
@@ -164,14 +165,22 @@ class ItemRepository(private val db: FirebaseFirestore) {
         return doc.id
     }
 
-    /** Puts items back to an earlier state: null means the item did not exist, so it is deleted. */
-    fun revert(storeId: String, before: Map<String, Item?>) {
-        val batch = db.batch()
-        before.forEach { (id, item) ->
-            val doc = items(storeId).document(id)
-            if (item == null) batch.delete(doc) else batch.set(doc, item.toMap())
+    /** A fresh item id, for writes that must know the id up front (batches, undo). */
+    fun newId(storeId: String): String = items(storeId).document().id
+
+    /**
+     * Writes several items at once, possibly in different stores, as one batch: null deletes.
+     * Used for undo (putting earlier states back), moving between stores and multi-line paste.
+     */
+    fun writeAll(states: Map<ItemRef, Item?>) {
+        states.entries.chunked(400).forEach { chunk ->
+            val batch = db.batch()
+            chunk.forEach { (ref, item) ->
+                val doc = items(ref.storeId).document(ref.itemId)
+                if (item == null) batch.delete(doc) else batch.set(doc, item.toMap())
+            }
+            batch.commit()
         }
-        batch.commit()
     }
 
     fun update(storeId: String, item: Item) {

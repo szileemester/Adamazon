@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import hu.szileemester.adamazon.domain.Item
+import hu.szileemester.adamazon.domain.PastedText
 import hu.szileemester.adamazon.domain.suggestions
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.StoreDescriptionDialog
@@ -96,6 +97,8 @@ fun StoreListScreen(
     var input by rememberSaveable { mutableStateOf("") }
     var checkedExpanded by rememberSaveable { mutableStateOf(false) }
     var showingDescription by rememberSaveable { mutableStateOf(false) }
+    var pasted by remember { mutableStateOf<List<PastePreview>?>(null) }
+    val otherStores by vm.otherStores.collectAsStateWithLifecycle()
 
     LaunchedEffect(vm) {
         vm.events.collect { event ->
@@ -112,6 +115,10 @@ fun StoreListScreen(
                 is ListEvent.Undone -> scope.launch {
                     snackbar.currentSnackbarData?.dismiss()
                     snackbar.showSnackbar("Visszavonva: ${event.label}", duration = SnackbarDuration.Short)
+                }
+                is ListEvent.Moved -> scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar("„${event.name}” áthelyezve ide: ${event.storeName}", duration = SnackbarDuration.Short)
                 }
             }
         }
@@ -157,7 +164,15 @@ fun StoreListScreen(
             Surface(tonalElevation = 3.dp) {
                 QuickAdd(
                     value = input,
-                    onValueChange = { input = it },
+                    onValueChange = { text ->
+                        // A pasted multi-line list goes to the confirmation dialog instead of the field.
+                        if (PastedText.isMultiLine(text)) {
+                            pasted = vm.previewPaste(text)
+                            input = ""
+                        } else {
+                            input = text
+                        }
+                    },
                     onSubmit = {
                         vm.add(input)
                         input = ""
@@ -231,6 +246,17 @@ fun StoreListScreen(
         }
     }
 
+    pasted?.let { previews ->
+        PasteDialog(
+            previews = previews,
+            onDismiss = { pasted = null },
+            onAdd = { lines ->
+                vm.addAll(lines)
+                pasted = null
+            },
+        )
+    }
+
     if (showingDescription && store != null) {
         StoreDescriptionDialog(
             store = store,
@@ -248,8 +274,10 @@ fun StoreListScreen(
             categories = state.categories,
             onDismiss = { editing = null },
             onCreateCategory = vm::createCategory,
-            onSave = { edited ->
-                vm.save(item, edited)
+            currentStore = store,
+            otherStores = otherStores,
+            onSave = { edited, targetStoreId ->
+                vm.save(item, edited, targetStoreId)
                 editing = null
             },
             onDelete = {

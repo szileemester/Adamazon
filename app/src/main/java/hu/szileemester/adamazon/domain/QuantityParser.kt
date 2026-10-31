@@ -26,5 +26,5 @@ object QuantityParser {
     }
 
     private fun quantity(amount: String, unit: String): String =
-        if (unit.isEmpty()) "$amount db" else "$amount ${unit.lowercase()}"
+        if (unit.isEmpty()) "$amount db" else "$amount ${Quantities.canonicalUnit(unit)}"
 }
