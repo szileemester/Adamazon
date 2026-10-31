@@ -47,7 +47,7 @@ service cloud.firestore {
                                'orderLocked', 'categoryScores', 'session']) &&
         str(d, 'name', 1, 60) &&
         optStr(d, 'domain', 200) &&
-        optStr(d, 'description', 100) &&
+        optStr(d, 'description', 255) &&
         optInt(d, 'colorArgb') && optInt(d, 'sortIndex') &&
         (!('orderLocked' in d) || d.orderLocked is bool) &&
         optBytes(d, 'logo', 200 * 1024) &&

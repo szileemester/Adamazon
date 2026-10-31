@@ -12,21 +12,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,8 +55,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
 
 data class StoreSummary(val store: Store, val openItems: List<Item>)
 
@@ -78,18 +76,26 @@ class StoresViewModel(private val c: AppContainer) : ViewModel() {
         }
     }
 
-    fun reorder(ids: List<String>) = c.stores.reorder(ids)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoresScreen(bottomBar: @Composable () -> Unit, openStore: (String) -> Unit) {
+fun StoresScreen(bottomBar: @Composable () -> Unit, openStore: (String) -> Unit, openOrder: () -> Unit) {
     val vm = appViewModel { StoresViewModel(it) }
     val summaries by vm.summaries.collectAsStateWithLifecycle()
     var adding by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Adamazon") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Adamazon") },
+                actions = {
+                    IconButton(onClick = openOrder) {
+                        Icon(Icons.Default.SwapVert, contentDescription = "Boltok sorrendje")
+                    }
+                },
+            )
+        },
         bottomBar = bottomBar,
         floatingActionButton = {
             FloatingActionButton(onClick = { adding = true }) { Icon(Icons.Default.Add, contentDescription = "Új üzlet") }
@@ -103,7 +109,7 @@ fun StoresScreen(bottomBar: @Composable () -> Unit, openStore: (String) -> Unit)
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
             )
-            else -> StoreGrid(list, Modifier.padding(padding), openStore, vm::reorder)
+            else -> StoreGrid(list, Modifier.padding(padding), openStore)
         }
     }
 
@@ -119,52 +125,30 @@ fun StoresScreen(bottomBar: @Composable () -> Unit, openStore: (String) -> Unit)
     }
 }
 
+/** Keep-style grid in the stores' order of importance; the order itself is set in [StoreOrderScreen]. */
 @Composable
-private fun StoreGrid(
-    summaries: List<StoreSummary>,
-    modifier: Modifier,
-    openStore: (String) -> Unit,
-    reorder: (List<String>) -> Unit,
-) {
-    // Local copy while dragging; replaced whenever Firestore sends a new list.
-    var order by remember { mutableStateOf(summaries) }
-    LaunchedEffect(summaries) { order = summaries }
-    val gridState = rememberLazyStaggeredGridState()
-    val reorderState = rememberReorderableLazyStaggeredGridState(gridState) { from, to ->
-        order = order.toMutableList().apply { add(to.index, removeAt(from.index)) }
-    }
-
+private fun StoreGrid(summaries: List<StoreSummary>, modifier: Modifier, openStore: (String) -> Unit) {
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Adaptive(160.dp),
-        state = gridState,
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalItemSpacing = 12.dp,
     ) {
-        items(order, key = { it.store.id }) { summary ->
-            ReorderableItem(reorderState, key = summary.store.id) { dragging ->
-                StoreCard(
-                    summary = summary,
-                    elevated = dragging,
-                    onClick = { openStore(summary.store.id) },
-                    modifier = Modifier.longPressDraggableHandle(
-                        onDragStopped = { reorder(order.map { it.store.id }) },
-                    ),
-                )
-            }
+        items(summaries, key = { it.store.id }) { summary ->
+            StoreCard(summary = summary, onClick = { openStore(summary.store.id) }, modifier = Modifier.animateItem())
         }
     }
 }
 
 @Composable
-private fun StoreCard(summary: StoreSummary, elevated: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun StoreCard(summary: StoreSummary, onClick: () -> Unit, modifier: Modifier) {
     val store = summary.store
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = storeContainerColor(store.colorArgb)),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (elevated) 8.dp else 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = if (store.colorArgb == 0L) CardDefaults.outlinedCardBorder() else null,
     ) {
         Column(Modifier.padding(12.dp)) {

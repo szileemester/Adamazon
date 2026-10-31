@@ -39,7 +39,7 @@ fun StoreDescriptionField(value: String, onValueChange: (String) -> Unit, modifi
         placeholder = { Text("pl. nyitva 7–21, csomagautomata a bejáratnál") },
         supportingText = { Text("${value.length} / ${Store.DESCRIPTION_MAX}") },
         minLines = 2,
-        maxLines = 4,
+        maxLines = 7,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         modifier = modifier.fillMaxWidth(),
     )

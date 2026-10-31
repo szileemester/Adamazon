@@ -32,6 +32,7 @@ import hu.szileemester.adamazon.ui.cards.CardsScreen
 import hu.szileemester.adamazon.ui.list.StoreListScreen
 import hu.szileemester.adamazon.ui.list.StoreSettingsScreen
 import hu.szileemester.adamazon.ui.settings.SettingsScreen
+import hu.szileemester.adamazon.ui.stores.StoreOrderScreen
 import hu.szileemester.adamazon.ui.stores.StoresScreen
 
 @Composable
@@ -53,6 +54,7 @@ fun AppRoot(container: AppContainer) {
 
 object Routes {
     const val STORES = "stores"
+    const val STORE_ORDER = "stores/order"
     const val CARDS = "cards"
     const val SETTINGS = "settings"
     const val STORE = "store/{id}"
@@ -81,7 +83,14 @@ private fun MainNavigation() {
     val bottomBar: @Composable () -> Unit = { BottomBar(nav) }
     NavHost(nav, startDestination = Routes.STORES) {
         composable(Routes.STORES) {
-            StoresScreen(bottomBar = bottomBar, openStore = { nav.navigate(Routes.store(it)) })
+            StoresScreen(
+                bottomBar = bottomBar,
+                openStore = { nav.navigate(Routes.store(it)) },
+                openOrder = { nav.navigate(Routes.STORE_ORDER) },
+            )
+        }
+        composable(Routes.STORE_ORDER) {
+            StoreOrderScreen(back = { nav.popBackStack() })
         }
         composable(Routes.CARDS) {
             CardsScreen(

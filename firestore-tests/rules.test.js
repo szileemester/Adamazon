@@ -83,7 +83,7 @@ describe("every write the app makes is accepted", () => {
   it("stores", async () => {
     const db = anna();
     await assertSucceeds(setDoc(doc(db, "stores/s2"), store({ description: "Nyitva 7-21" })));
-    await assertSucceeds(updateDoc(doc(db, "stores/s1"), { name: "Auchan Óbuda", domain: null, colorArgb: 0, description: "x".repeat(100) }));
+    await assertSucceeds(updateDoc(doc(db, "stores/s1"), { name: "Auchan Óbuda", domain: null, colorArgb: 0, description: "x".repeat(255) }));
     await assertSucceeds(updateDoc(doc(db, "stores/s1"), { description: null }));
     await assertSucceeds(updateDoc(doc(db, "stores/s1"), { logo: bytes(20_000) }));
     await assertSucceeds(updateDoc(doc(db, "stores/s1"), { logo: deleteField() }));
@@ -122,8 +122,8 @@ describe("every write the app makes is accepted", () => {
 });
 
 describe("bad data is rejected", () => {
-  it("store description over 100 characters", async () => {
-    await assertFails(updateDoc(doc(anna(), "stores/s1"), { description: "x".repeat(101) }));
+  it("store description over 255 characters", async () => {
+    await assertFails(updateDoc(doc(anna(), "stores/s1"), { description: "x".repeat(256) }));
   });
 
   it("empty or missing names", async () => {

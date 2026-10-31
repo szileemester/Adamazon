@@ -37,7 +37,7 @@ data class Store(
     override fun hashCode(): Int = id.hashCode() * 31 + name.hashCode()
 
     companion object {
-        const val DESCRIPTION_MAX = 100
+        const val DESCRIPTION_MAX = 255
 
         /** Trims and caps a typed description; blank means "no description". */
         fun cleanDescription(text: String): String? = text.trim().take(DESCRIPTION_MAX).ifBlank { null }

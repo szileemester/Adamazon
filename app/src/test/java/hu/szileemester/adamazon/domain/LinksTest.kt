@@ -13,6 +13,12 @@ class LinksTest {
     }
 
     @Test
+    fun `auto-capitalised scheme is lowercased so the browser opens it`() {
+        assertEquals(listOf("https://my.linistry.com/Abc"), urls("Https://my.linistry.com/Abc"))
+        assertEquals(listOf("https://WWW.Dm.hu"), urls("WWW.Dm.hu"))
+    }
+
+    @Test
     fun `www links get https`() {
         assertEquals(listOf("https://www.auchan.hu/akciok"), urls("Akciók: www.auchan.hu/akciok"))
     }
