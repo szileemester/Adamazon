@@ -1,5 +1,6 @@
 package hu.szileemester.adamazon.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -36,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import hu.szileemester.adamazon.AppContainer
 import hu.szileemester.adamazon.data.AccessState
+import hu.szileemester.adamazon.data.DataErrors
 import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.ui.cards.CardEditScreen
 import hu.szileemester.adamazon.ui.cards.CardViewerScreen
@@ -49,6 +52,16 @@ import hu.szileemester.adamazon.ui.stores.StoresScreen
 @Composable
 fun AppRoot(container: AppContainer) {
     val state by container.auth.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        // Several listeners usually fail together; one toast per message is enough.
+        var last = "" to 0L
+        DataErrors.messages.collect { message ->
+            val now = System.currentTimeMillis()
+            if (message != last.first || now - last.second > 10_000) Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            last = message to now
+        }
+    }
     when (val s = state) {
         AccessState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()

@@ -142,6 +142,12 @@ describe("groups", () => {
     await assertFails(updateDoc(doc(anna(), "stores/old1"), { name: "X" }));
     await assertFails(deleteDoc(doc(anna(), "stores/old1")));
   });
+
+  it("pre-group data is closed once the copy is marked done", async () => {
+    await updateDoc(doc(anna(), "groups/g1"), { migratedAt: 1761900000000 });
+    await assertFails(getDocs(collection(anna(), "stores")));
+    await assertFails(getDoc(doc(anna(), "cards/oldc/images/front")));
+  });
 });
 
 describe("every write the app makes is accepted", () => {
@@ -202,6 +208,14 @@ describe("bad data is rejected", () => {
     const db = anna();
     await assertFails(updateDoc(doc(db, "groups/g1/stores/s1"), { hacked: true }));
     await assertFails(setDoc(doc(db, "groups/g1/stores/s1/items/i2"), item({ price: 100 })));
+  });
+
+  it("oversized or malformed store order data", async () => {
+    const db = anna();
+    const scores = Object.fromEntries(Array.from({ length: 101 }, (_, i) => [`k${i}`, i]));
+    await assertFails(updateDoc(doc(db, "groups/g1/stores/s1"), { categoryScores: scores }));
+    await assertFails(updateDoc(doc(db, "groups/g1/stores/s1"), { session: { startedAt: 1, junk: "x".repeat(1000) } }));
+    await assertFails(updateDoc(doc(db, "groups/g1/stores/s1"), { session: { sequence: Array(101).fill("zoldseg") } }));
   });
 
   it("wrong types", async () => {

@@ -162,14 +162,14 @@ fun StoreListScreen(
     LaunchedEffect(vm) {
         vm.events.collect { event ->
             when (event) {
-                is ListEvent.AlreadyOnList -> snackbar.showSnackbar("„${event.name}” már a listán van.")
+                is ListEvent.AlreadyOnList -> scope.launch { snackbar.showSnackbar("„${event.name}” már a listán van.") }
                 is ListEvent.Deleted -> scope.launch {
                     val result = snackbar.showSnackbar(
                         "„${event.item.name}” törölve",
                         actionLabel = "Visszavonás",
                         duration = SnackbarDuration.Short,
                     )
-                    if (result == SnackbarResult.ActionPerformed) vm.undo()
+                    if (result == SnackbarResult.ActionPerformed) vm.undo(event.undo)
                 }
                 is ListEvent.Undone -> scope.launch {
                     snackbar.currentSnackbarData?.dismiss()

@@ -29,11 +29,12 @@ service cloud.firestore {
       return allowed() && myGroup() != '' && myGroup() == g;
     }
 
-    // The data from before groups existed stays readable, for the one-time copy into the group
-    // that is flagged with legacyImport. Nobody can write it any more.
+    // The data from before groups existed stays readable for the one-time copy into the group
+    // flagged with legacyImport, until that copy is marked done. Nobody can write it any more.
     function legacyReader() {
+      let group = get(/databases/$(database)/documents/groups/$(myGroup())).data;
       return allowed() && myGroup() != '' &&
-        get(/databases/$(database)/documents/groups/$(myGroup())).data.get('legacyImport', false) == true;
+        group.get('legacyImport', false) == true && !('migratedAt' in group);
     }
 
     // --- field helpers (d = the document as it will look after the write) ---
@@ -70,8 +71,14 @@ service cloud.firestore {
         optInt(d, 'colorArgb') && optInt(d, 'sortIndex') &&
         (!('orderLocked' in d) || d.orderLocked is bool) &&
         optBytes(d, 'logo', 200 * 1024) &&
-        (!('categoryScores' in d) || d.categoryScores is map) &&
-        (!('session' in d) || d.session is map);
+        (!('categoryScores' in d) || (d.categoryScores is map && d.categoryScores.size() <= 100)) &&
+        (!('session' in d) || validSession(d.session));
+    }
+
+    // The shopping trip in progress (domain/Models.kt ShoppingSession).
+    function validSession(s) {
+      return s is map && s.keys().hasOnly(['startedAt', 'lastActivityAt', 'sequence']) &&
+        (!('sequence' in s) || (s.sequence is list && s.sequence.size() <= 100));
     }
 
     function validItem(d) {

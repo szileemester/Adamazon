@@ -9,6 +9,7 @@ import android.os.Build
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -79,7 +80,7 @@ class LogoFetcher {
     suspend fun fetch(domain: String): ByteArray? = withContext(Dispatchers.IO) {
         runCatching {
             val host = domain.trim().removePrefix("https://").removePrefix("http://").substringBefore('/')
-            val url = URL("https://www.google.com/s2/favicons?domain=$host&sz=${ImageCompressor.LOGO_SIZE}")
+            val url = URL("https://www.google.com/s2/favicons?domain=${URLEncoder.encode(host, "UTF-8")}&sz=${ImageCompressor.LOGO_SIZE}")
             val connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 10_000
             connection.readTimeout = 10_000

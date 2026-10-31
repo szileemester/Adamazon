@@ -32,6 +32,18 @@ class VoiceSplitterTest {
     }
 
     @Test
+    fun `a quantity said on its own goes with the next item`() {
+        assertEquals(listOf("2 kiló alma"), split("két kiló", "alma"))
+        assertEquals(listOf("tej 2 liter"), split("tej", "két liter"))
+    }
+
+    @Test
+    fun `fillers are dropped and do not become numbers`() {
+        assertEquals(listOf("kenyér"), split("hát kenyér"))
+        assertEquals(listOf("6 tojás"), split("hat tojás"))
+    }
+
+    @Test
     fun `a trailing quantity stays with its item`() {
         assertEquals(listOf("tej 2 liter", "kenyér"), split("tej 2 liter és kenyér"))
     }

@@ -187,8 +187,14 @@ class ItemRepository(private val db: FirebaseFirestore, private val group: Docum
         }
     }
 
-    fun update(storeId: String, item: Item) {
-        items(storeId).document(item.id).set(item.toMap())
+    /**
+     * Saves only the fields the user changed: the other user may have ticked the item or changed
+     * something else meanwhile, and that must not be overwritten with the editor's old copy.
+     */
+    fun update(storeId: String, original: Item, edited: Item) {
+        val before = original.toMap()
+        val changed = edited.toMap().filter { (field, value) -> before[field] != value }
+        if (changed.isNotEmpty()) items(storeId).document(edited.id).update(changed)
     }
 
     fun setChecked(storeId: String, itemId: String, checked: Boolean, now: Long) {
@@ -236,6 +242,10 @@ class CardRepository(private val db: FirebaseFirestore, group: DocumentReference
 
     fun card(id: String): Flow<LoyaltyCard?> =
         collection.document(id).snapshotFlow().map { if (it.exists()) it.toCard() else null }
+
+    /** The card tied to a store, if any – without downloading every other card's thumbnail. */
+    fun cardOf(storeId: String): Flow<LoyaltyCard?> =
+        collection.whereEqualTo("storeId", storeId).limit(1).snapshotFlow().map { s -> s.documents.firstOrNull()?.toCard() }
 
     /** The card's photo, or null while it has none. */
     fun image(id: String): Flow<ByteArray?> =

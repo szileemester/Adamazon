@@ -11,12 +11,16 @@ import kotlinx.coroutines.tasks.await
 /**
  * Copies the data from before groups existed (top-level collections) into the group flagged with
  * `legacyImport`, once. Document ids are kept, so cards still point at their stores and running it
- * twice (e.g. on two phones at once) gives the same result. The old data is left in place as a
- * backup; it is read-only by now (see firestore.rules).
+ * twice at the same moment (two phones) gives the same result. The old data is left in place as a
+ * backup in the console; the app can no longer read it once migratedAt is set (see firestore.rules).
  */
 class LegacyMigration(private val db: FirebaseFirestore, private val group: DocumentReference) {
 
     suspend fun run() {
+        // The cached group may be stale: if another phone has finished the copy since, running it
+        // again would put the old data back over everything edited after it.
+        val current = group.get(Source.SERVER).await()
+        if (current.getBoolean("legacyImport") != true || current.contains("migratedAt")) return
         refused.clear()
         copyAll(db.collection("categories"), group.collection("categories"), CATEGORY_FIELDS)
         copyAll(db.collection("learned"), group.collection("learned"), LEARNED_FIELDS)

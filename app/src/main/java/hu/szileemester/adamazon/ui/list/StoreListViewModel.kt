@@ -44,7 +44,7 @@ data class StoreListState(
 
 sealed interface ListEvent {
     data class AlreadyOnList(val name: String) : ListEvent
-    data class Deleted(val item: Item) : ListEvent
+    data class Deleted(val item: Item, val undo: UndoEntry) : ListEvent
     data class Undone(val label: String) : ListEvent
     data class Moved(val name: String, val storeName: String) : ListEvent
 }
@@ -59,8 +59,8 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         c.session.stores.store(storeId),
         c.session.items.itemsOf(storeId),
         categories,
-        c.session.cards.cards,
-    ) { store, items, categories, cards ->
+        c.session.cards.cardOf(storeId),
+    ) { store, items, categories, card ->
         val ordered = CategoryOrder.ordered(categories, store?.categoryScores.orEmpty())
         val byCategory = items.filter { !it.checked }.groupBy { resolveCategory(it.categoryId, categories) }
         StoreListState(
@@ -69,7 +69,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
             checked = items.filter { it.checked }.sortedByDescending { it.checkedAt ?: 0 },
             categories = categories,
             items = items,
-            card = cards.firstOrNull { it.storeId == storeId },
+            card = card,
             loaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StoreListState())
@@ -92,13 +92,23 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
 
     private fun here(itemId: String) = ItemRef(storeId, itemId)
 
-    private fun record(label: String, before: Map<ItemRef, Item?>) {
-        _undo.update { it.push(UndoEntry(label, before)) }
-    }
+    private fun record(label: String, before: Map<ItemRef, Item?>): UndoEntry =
+        UndoEntry(label, before).also { entry -> _undo.update { it.push(entry) } }
 
+    /** Undoes the newest change. */
     fun undo() {
         val (entry, rest) = _undo.value.pop() ?: return
         _undo.value = rest
+        apply(entry)
+    }
+
+    /** Undoes exactly [entry], even if newer changes were made since; no-op if already undone. */
+    fun undo(entry: UndoEntry) {
+        _undo.value = _undo.value.take(entry) ?: return
+        apply(entry)
+    }
+
+    private fun apply(entry: UndoEntry) {
         c.session.items.writeAll(entry.before)
         _events.trySend(ListEvent.Undone(entry.label))
     }
@@ -219,9 +229,9 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
     }
 
     fun delete(item: Item) {
-        record("„${item.name}” törlése", mapOf(here(item.id) to item))
+        val entry = record("„${item.name}” törlése", mapOf(here(item.id) to item))
         c.session.items.delete(storeId, item.id)
-        _events.trySend(ListEvent.Deleted(item))
+        _events.trySend(ListEvent.Deleted(item, entry))
     }
 
     fun clearChecked() {
@@ -251,7 +261,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         } else {
             if (edited == original) return
             record("„${original.name}” szerkesztése", mapOf(here(original.id) to original))
-            c.session.items.update(storeId, edited)
+            c.session.items.update(storeId, original, edited)
         }
         if (edited.categoryId != original.categoryId || edited.emoji != original.emoji || edited.key != original.key) {
             c.session.learned.remember(edited.name, edited.categoryId, edited.emoji)

@@ -28,4 +28,13 @@ class UndoHistoryTest {
         assertFalse(UndoHistory().canUndo)
         assertNull(UndoHistory().pop())
     }
+
+    @Test
+    fun `a specific change can be taken out from under newer ones`() {
+        val deleted = entry(1)
+        val history = UndoHistory().push(deleted).push(entry(2))
+        val rest = history.take(deleted)!!
+        assertEquals(listOf("lépés 2"), rest.entries.map { it.label })
+        assertNull(rest.take(deleted))
+    }
 }

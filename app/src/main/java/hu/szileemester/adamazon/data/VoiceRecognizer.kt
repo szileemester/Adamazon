@@ -21,13 +21,14 @@ import kotlinx.coroutines.flow.asStateFlow
  * after a short silence, and is restarted at once, so each pause separates two utterances.
  *
  * Google's recognizer is asked for by name – the phone's default may be a weaker one (Samsung's).
- * The start beeps that every restart would make are muted while listening; the muted streams are
- * remembered so they are restored even if the app dies mid-listening. Main thread only.
+ * The start beeps that every restart would make are muted while listening (notification and system
+ * sounds; music and navigation stay on). The muted streams are remembered, so they are restored at
+ * the next app start even if the app dies mid-listening ([restoreMutedStreams]). Main thread only.
  */
 class VoiceRecognizer(context: Context) {
     private val app = context.applicationContext
     private val audio = app.getSystemService(AudioManager::class.java)
-    private val prefs = app.getSharedPreferences("voice", Context.MODE_PRIVATE)
+    private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val handler = Handler(Looper.getMainLooper())
     private var recognizer: SpeechRecognizer? = null
     private val heard = mutableListOf<String>()
@@ -44,10 +45,6 @@ class VoiceRecognizer(context: Context) {
 
     private val _state = MutableStateFlow<Listening?>(null)
     val state: StateFlow<Listening?> = _state.asStateFlow()
-
-    init {
-        restoreStreams()
-    }
 
     val isAvailable: Boolean
         get() = googleService() != null || SpeechRecognizer.isRecognitionAvailable(app)
@@ -164,19 +161,26 @@ class VoiceRecognizer(context: Context) {
         prefs.edit { putString(MUTED_KEY, muted.joinToString(",")) }
     }
 
-    private fun restoreStreams() {
-        val muted = prefs.getString(MUTED_KEY, null)?.split(',')?.mapNotNull { it.toIntOrNull() }.orEmpty()
-        muted.forEach { runCatching { audio.adjustStreamVolume(it, AudioManager.ADJUST_UNMUTE, 0) } }
-        prefs.edit { remove(MUTED_KEY) }
-    }
+    private fun restoreStreams() = restoreMutedStreams(app)
 
-    private companion object {
-        const val LANGUAGE = "hu-HU"
-        const val MAX_LISTENING_MS = 2 * 60 * 1000L
-        const val STOP_GRACE_MS = 2_000L
-        const val RETRY_DELAY_MS = 300L
-        const val MUTED_KEY = "mutedStreams"
-        val GOOGLE_PACKAGES = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts", "com.google.android.as")
-        val BEEP_STREAMS = listOf(AudioManager.STREAM_MUSIC, AudioManager.STREAM_NOTIFICATION, AudioManager.STREAM_SYSTEM)
+    companion object {
+        /** Unmutes what an earlier listening left muted; called on every app start. */
+        fun restoreMutedStreams(context: Context) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val muted = prefs.getString(MUTED_KEY, null)?.split(',')?.mapNotNull { it.toIntOrNull() }.orEmpty()
+            if (muted.isEmpty()) return
+            val audio = context.getSystemService(AudioManager::class.java)
+            muted.forEach { runCatching { audio.adjustStreamVolume(it, AudioManager.ADJUST_UNMUTE, 0) } }
+            prefs.edit { remove(MUTED_KEY) }
+        }
+
+        private const val PREFS = "voice"
+        private const val LANGUAGE = "hu-HU"
+        private const val MAX_LISTENING_MS = 2 * 60 * 1000L
+        private const val STOP_GRACE_MS = 2_000L
+        private const val RETRY_DELAY_MS = 300L
+        private const val MUTED_KEY = "mutedStreams"
+        private val GOOGLE_PACKAGES = listOf("com.google.android.googlequicksearchbox", "com.google.android.tts", "com.google.android.as")
+        private val BEEP_STREAMS = listOf(AudioManager.STREAM_NOTIFICATION, AudioManager.STREAM_SYSTEM)
     }
 }

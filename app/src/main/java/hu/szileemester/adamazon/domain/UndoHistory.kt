@@ -18,4 +18,13 @@ data class UndoHistory(val entries: List<UndoEntry> = emptyList(), val capacity:
     /** The newest entry and the history without it; null when there is nothing to undo. */
     fun pop(): Pair<UndoEntry, UndoHistory>? =
         entries.lastOrNull()?.let { it to copy(entries = entries.dropLast(1)) }
+
+    /**
+     * Takes out exactly [entry] (compared by identity), wherever it is – for an undo button that
+     * belongs to one change, e.g. on the "deleted" snackbar. Null when it is no longer there.
+     */
+    fun take(entry: UndoEntry): UndoHistory? {
+        val index = entries.indexOfLast { it === entry }
+        return if (index < 0) null else copy(entries = entries.filterIndexed { i, _ -> i != index })
+    }
 }
