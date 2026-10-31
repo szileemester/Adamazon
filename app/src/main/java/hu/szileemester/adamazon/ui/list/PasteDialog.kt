@@ -24,17 +24,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Confirms a multi-line paste: one row per line with the guessed icon and quantity. Lines already
+ * Confirms a multi-line paste or a dictated list: one row per line with the guessed icon and quantity. Lines already
  * on the list (or pasted twice) are shown but not selectable; the rest can be unticked.
  */
 @Composable
-fun PasteDialog(previews: List<PastePreview>, onDismiss: () -> Unit, onAdd: (List<String>) -> Unit) {
+fun PasteDialog(
+    previews: List<PastePreview>,
+    onDismiss: () -> Unit,
+    onAdd: (List<String>) -> Unit,
+    title: String = "Beillesztett lista",
+) {
     val selected = remember(previews) { mutableStateListOf(*previews.map { it.addable }.toTypedArray()) }
     val count = selected.count { it }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Beillesztett lista") },
+        title = { Text(title) },
         text = {
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
                 itemsIndexed(previews) { index, preview ->
@@ -77,5 +82,5 @@ private fun statusText(preview: PastePreview): String? = when (preview.status) {
     PastePreview.Status.NEW -> null
     PastePreview.Status.RESTORE -> "korábban kipipálva – visszakerül a listára"
     PastePreview.Status.ON_LIST -> "már a listán van"
-    PastePreview.Status.DUPLICATE -> "kétszer szerepel a beillesztésben"
+    PastePreview.Status.DUPLICATE -> "kétszer szerepel a listában"
 }

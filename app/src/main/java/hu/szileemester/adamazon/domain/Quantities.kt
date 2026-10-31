@@ -19,7 +19,7 @@ object Quantities {
 
     private val SYNONYMS = mapOf(
         "darab" to "db", "kiló" to "kg", "kilo" to "kg", "gramm" to "g", "liter" to "l",
-        "cs" to "csomag", "csom" to "csomag",
+        "cs" to "csomag", "csom" to "csomag", "deka" to "dkg", "dekagramm" to "dkg",
     )
 
     private val PATTERN = Regex("""^(\d+(?:[.,]\d+)?)\s*(\p{L}*)\.?$""")

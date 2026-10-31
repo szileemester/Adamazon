@@ -6,11 +6,15 @@ data class ParsedInput(val name: String, val quantity: String?)
 object QuantityParser {
     private const val NUMBER = "\\d+(?:[.,]\\d+)?"
     private const val UNITS =
-        "kg|dkg|g|gramm|l|liter|dl|cl|ml|db|darab|cs|csomag|csom|üveg|doboz|tálca|zacskó|szál|fej|gerezd|tekercs|pár|kiló|rekesz|karton|tubus|flakon|szelet"
+        "kg|dkg|deka|dekagramm|g|gramm|l|liter|dl|cl|ml|db|darab|cs|csomag|csom|üveg|doboz|tálca|zacskó|szál|fej|gerezd|tekercs|pár|kiló|rekesz|karton|tubus|flakon|szelet"
     private val LEADING =
         Regex("^($NUMBER)\\s*(?:($UNITS)\\.?|x|×)?\\s+(.+)$", RegexOption.IGNORE_CASE)
     private val TRAILING =
         Regex("^(.+?)\\s+($NUMBER)\\s*(?:($UNITS)\\.?|x|×)?$", RegexOption.IGNORE_CASE)
+
+    private val UNIT = Regex("(?:$UNITS)\\.?", RegexOption.IGNORE_CASE)
+
+    fun isUnit(word: String): Boolean = UNIT.matches(word)
 
     fun parse(input: String): ParsedInput {
         val text = input.trim().replace(Regex("\\s+"), " ")

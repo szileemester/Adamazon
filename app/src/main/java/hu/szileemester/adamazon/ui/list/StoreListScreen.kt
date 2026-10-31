@@ -1,6 +1,16 @@
 package hu.szileemester.adamazon.ui.list
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -28,10 +39,14 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +67,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,13 +77,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hu.szileemester.adamazon.data.VoiceRecognizer
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.PastedText
 import hu.szileemester.adamazon.domain.suggestions
@@ -98,7 +121,43 @@ fun StoreListScreen(
     var checkedExpanded by rememberSaveable { mutableStateOf(false) }
     var showingDescription by rememberSaveable { mutableStateOf(false) }
     var pasted by remember { mutableStateOf<List<PastePreview>?>(null) }
+    var pastedTitle by remember { mutableStateOf("") }
     val otherStores by vm.otherStores.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val voice = remember { VoiceRecognizer(context) }
+    val listening by voice.state.collectAsStateWithLifecycle()
+    val voiceAvailable = remember { voice.isAvailable }
+    DisposableEffect(voice) { onDispose { voice.cancel() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { voice.stop() }
+
+    fun showMessage(text: String) {
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            snackbar.showSnackbar(text, duration = SnackbarDuration.Short)
+        }
+    }
+
+    // One dictated item is added at once; several go to the same confirmation as a pasted list.
+    fun startVoice() = voice.start { result ->
+        when (result) {
+            is VoiceRecognizer.Result.Failed -> showMessage(result.message)
+            is VoiceRecognizer.Result.Heard -> {
+                val lines = vm.voiceLines(result.utterances)
+                when (lines.size) {
+                    0 -> showMessage("Nem hallottam semmit.")
+                    1 -> vm.add(lines.single())
+                    else -> {
+                        pastedTitle = "Diktált lista"
+                        pasted = vm.previewLines(lines)
+                    }
+                }
+            }
+        }
+    }
+    val microphonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startVoice() else showMessage("A diktáláshoz engedélyezni kell a mikrofont.")
+    }
 
     LaunchedEffect(vm) {
         vm.events.collect { event ->
@@ -167,7 +226,8 @@ fun StoreListScreen(
                     onValueChange = { text ->
                         // A pasted multi-line list goes to the confirmation dialog instead of the field.
                         if (PastedText.isMultiLine(text)) {
-                            pasted = vm.previewPaste(text)
+                            pastedTitle = "Beillesztett lista"
+                            pasted = vm.previewLines(PastedText.lines(text))
                             input = ""
                         } else {
                             input = text
@@ -184,6 +244,16 @@ fun StoreListScreen(
                     },
                     canUndo = canUndo,
                     onUndo = vm::undo,
+                    listening = listening,
+                    onMic = if (!voiceAvailable) null else ({
+                        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                            PackageManager.PERMISSION_GRANTED
+                        when {
+                            listening != null -> voice.stop()
+                            granted -> startVoice()
+                            else -> microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    }),
                     modifier = Modifier.navigationBarsPadding().imePadding(),
                 )
             }
@@ -249,6 +319,7 @@ fun StoreListScreen(
     pasted?.let { previews ->
         PasteDialog(
             previews = previews,
+            title = pastedTitle,
             onDismiss = { pasted = null },
             onAdd = { lines ->
                 vm.addAll(lines)
@@ -297,31 +368,85 @@ private fun QuickAdd(
     onSuggestion: (String) -> Unit,
     canUndo: Boolean,
     onUndo: () -> Unit,
+    listening: VoiceRecognizer.Listening?,
+    onMic: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
         // Suggestions above the field, so they stay visible right over the keyboard.
-        if (suggestions.isNotEmpty()) {
+        if (suggestions.isNotEmpty() && listening == null) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
                 items(suggestions) { s -> SuggestionChip(onClick = { onSuggestion(s) }, label = { Text(s) }) }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
+            if (listening != null) {
+                ListeningField(listening, Modifier.weight(1f))
+            } else OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Új elem, pl. 2 kg paradicsom") },
+                placeholder = { Text("Új elem, pl. 2 kg alma", maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 // Keyboard stays open so several items can be typed in a row.
                 keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             )
+            if (onMic != null) {
+                Spacer(Modifier.width(4.dp))
+                MicButton(listening = listening != null, onClick = onMic)
+            }
             Spacer(Modifier.width(4.dp))
             FilledTonalIconButton(onClick = onUndo, enabled = canUndo, modifier = Modifier.size(52.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Utolsó művelet visszavonása")
             }
+        }
+    }
+}
+
+/** Takes the text field's place while dictating: what has been heard so far, newest at the end. */
+@Composable
+private fun ListeningField(listening: VoiceRecognizer.Listening, modifier: Modifier = Modifier) {
+    val heard = (listening.heard + listening.partial).filter { it.isNotBlank() }.joinToString(" · ")
+    Box(
+        modifier
+            .height(56.dp)
+            .border(2.dp, MaterialTheme.colorScheme.error, MaterialTheme.shapes.extraSmall)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            if (heard.isEmpty()) "Hallgatlak…" else heard.takeLast(80),
+            color = if (heard.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+/** The mic starts dictation; while listening it turns into a pulsing red stop button. */
+@Composable
+private fun MicButton(listening: Boolean, onClick: () -> Unit) {
+    if (listening) {
+        val pulse by rememberInfiniteTransition(label = "mic").animateFloat(
+            initialValue = 1f,
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(tween(600), RepeatMode.Reverse),
+            label = "micPulse",
+        )
+        FilledIconButton(
+            onClick = onClick,
+            modifier = Modifier.size(52.dp).scale(pulse),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            ),
+        ) { Icon(Icons.Default.Stop, contentDescription = "Diktálás befejezése") }
+    } else {
+        FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(52.dp)) {
+            Icon(Icons.Default.Mic, contentDescription = "Diktálás")
         }
     }
 }

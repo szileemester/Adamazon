@@ -12,13 +12,13 @@ import hu.szileemester.adamazon.domain.CategoryOrder
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.ItemRef
 import hu.szileemester.adamazon.domain.Normalizer
-import hu.szileemester.adamazon.domain.PastedText
 import hu.szileemester.adamazon.domain.QuantityParser
 import hu.szileemester.adamazon.domain.LearnedMapping
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.domain.UndoEntry
 import hu.szileemester.adamazon.domain.UndoHistory
+import hu.szileemester.adamazon.domain.VoiceSplitter
 import hu.szileemester.adamazon.domain.decideAddItem
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -134,11 +134,21 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         }
     }
 
-    /** What pasting [text] would do, line by line, for the confirmation dialog. */
-    fun previewPaste(text: String): List<PastePreview> {
+    /** Splits dictated utterances into items; a name already used here is never cut apart. */
+    fun voiceLines(utterances: List<String>): List<String> {
+        val known = state.value.items.map { it.key } + learned.value.keys
+        val splitter = VoiceSplitter(c.categorizer::isProductWord) { first, second ->
+            val pair = Normalizer.key("$first $second")
+            c.categorizer.isOneProduct(first, second) || known.any { it == pair || it.startsWith("$pair ") }
+        }
+        return splitter.split(utterances)
+    }
+
+    /** What adding these pasted or dictated lines would do, line by line, for the confirmation dialog. */
+    fun previewLines(lines: List<String>): List<PastePreview> {
         val current = state.value
         val seen = mutableSetOf<String>()
-        return PastedText.lines(text).map { line ->
+        return lines.map { line ->
             val parsed = QuantityParser.parse(line)
             val key = Normalizer.key(parsed.name)
             val decision = decideAddItem(line, current.items)
@@ -157,7 +167,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         }
     }
 
-    /** Adds several pasted lines in one batch; one undo step takes them all back. */
+    /** Adds several pasted or dictated lines in one batch; one undo step takes them all back. */
     fun addAll(lines: List<String>) {
         val current = state.value
         val now = System.currentTimeMillis()

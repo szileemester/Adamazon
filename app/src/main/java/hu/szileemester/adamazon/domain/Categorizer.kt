@@ -70,6 +70,26 @@ class Categorizer(
         return best
     }
 
+    /**
+     * True for a word that names a product on its own ("tej", "almát"), false for adjectives made
+     * from one ("almás", "fokhagymás") – used to tell where a dictated item ends.
+     */
+    fun isProductWord(word: String): Boolean {
+        val key = Normalizer.key(word)
+        val entry = singleWord.firstOrNull { matchesWord(key, it.stem) } ?: return false
+        return !ADJECTIVE_SUFFIX.matches(key.substring(entry.stem.length))
+    }
+
+    /** True when two words are one product together: "csirke comb" (csirkecomb), "kovászos uborka". */
+    fun isOneProduct(first: String, second: String): Boolean {
+        val a = Normalizer.key(first)
+        val b = Normalizer.key(second)
+        val joined = a + b
+        val spaced = "$a $b"
+        return singleWord.any { it.stem.length > a.length && matchesWord(joined, it.stem) } ||
+            multiWord.any { spaced.startsWith(it.stem) || it.stem.startsWith(spaced) }
+    }
+
     private fun wordEnd(key: String, from: Int): Int =
         key.indexOf(' ', from).let { if (it < 0) key.length else it }
 
@@ -80,5 +100,6 @@ class Categorizer(
         const val FALLBACK_CATEGORY_ID = "egyeb"
         private const val SHORT_STEM = 3
         private const val SHORT_STEM_SUFFIX = 3
+        private val ADJECTIVE_SUFFIX = Regex("[aeiou]?s|i")
     }
 }
