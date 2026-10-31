@@ -155,6 +155,8 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         c.items.deleteAll(storeId, checked.map { it.id })
     }
 
+    fun setDescription(description: String?) = c.stores.setDescription(storeId, description)
+
     /** Creates a category from the item editor and returns its id, so it can be selected at once. */
     fun createCategory(name: String, emoji: String): String =
         c.categories.add(name, emoji, state.value.categories)

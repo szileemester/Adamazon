@@ -18,6 +18,8 @@ data class Store(
     val id: String,
     val name: String,
     val domain: String? = null,
+    /** Short free-text note (opening hours, locker code…), at most [Store.DESCRIPTION_MAX] chars. */
+    val description: String? = null,
     val colorArgb: Long = 0,
     val logo: ByteArray? = null,
     val sortIndex: Int = 0,
@@ -27,11 +29,19 @@ data class Store(
 ) {
     override fun equals(other: Any?): Boolean =
         other is Store && id == other.id && name == other.name && domain == other.domain &&
+            description == other.description &&
             colorArgb == other.colorArgb && logo.contentEqualsNullable(other.logo) &&
             sortIndex == other.sortIndex && categoryScores == other.categoryScores && orderLocked == other.orderLocked &&
             session == other.session
 
     override fun hashCode(): Int = id.hashCode() * 31 + name.hashCode()
+
+    companion object {
+        const val DESCRIPTION_MAX = 100
+
+        /** Trims and caps a typed description; blank means "no description". */
+        fun cleanDescription(text: String): String? = text.trim().take(DESCRIPTION_MAX).ifBlank { null }
+    }
 }
 
 data class Item(

@@ -38,6 +38,7 @@ fun DocumentSnapshot.toStore(): Store {
         id = id,
         name = getString("name").orEmpty(),
         domain = getString("domain"),
+        description = getString("description"),
         colorArgb = getLong("colorArgb") ?: 0,
         logo = getBlob("logo")?.toBytes(),
         sortIndex = getLong("sortIndex")?.toInt() ?: 0,

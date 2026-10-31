@@ -71,7 +71,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.suggestions
 import hu.szileemester.adamazon.ui.appViewModel
+import hu.szileemester.adamazon.ui.components.StoreDescriptionDialog
 import hu.szileemester.adamazon.ui.components.StoreLogo
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import hu.szileemester.adamazon.ui.theme.storeContainerColor
 import kotlinx.coroutines.launch
 
@@ -92,6 +95,7 @@ fun StoreListScreen(
     var editing by remember { mutableStateOf<Item?>(null) }
     var input by rememberSaveable { mutableStateOf("") }
     var checkedExpanded by rememberSaveable { mutableStateOf(false) }
+    var showingDescription by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(vm) {
         vm.events.collect { event ->
@@ -121,7 +125,11 @@ fun StoreListScreen(
             TopAppBar(
                 title = {
                     if (store != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Tapping the logo (or name) shows the store's description.
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clip(CircleShape).clickable { showingDescription = true },
+                        ) {
                             StoreLogo(store, size = 32.dp)
                             Spacer(Modifier.width(10.dp))
                             Text(store.name)
@@ -221,6 +229,17 @@ fun StoreListScreen(
                 }
             }
         }
+    }
+
+    if (showingDescription && store != null) {
+        StoreDescriptionDialog(
+            store = store,
+            onDismiss = { showingDescription = false },
+            onSave = {
+                vm.setDescription(it)
+                showingDescription = false
+            },
+        )
     }
 
     editing?.let { item ->

@@ -90,7 +90,7 @@ class StoreRepository(private val db: FirebaseFirestore) {
     fun store(id: String): Flow<Store?> =
         collection.document(id).snapshotFlow().map { if (it.exists()) it.toStore() else null }
 
-    fun add(name: String, domain: String?, colorArgb: Long, sortIndex: Int): String {
+    fun add(name: String, domain: String?, colorArgb: Long, sortIndex: Int, description: String?): String {
         val doc = collection.document()
         doc.set(
             mapOf(
@@ -99,13 +99,20 @@ class StoreRepository(private val db: FirebaseFirestore) {
                 "colorArgb" to colorArgb,
                 "sortIndex" to sortIndex,
                 "orderLocked" to false,
+                "description" to description,
             ),
         )
         return doc.id
     }
 
-    fun update(id: String, name: String, domain: String?, colorArgb: Long) {
-        collection.document(id).update(mapOf("name" to name, "domain" to domain, "colorArgb" to colorArgb))
+    fun update(id: String, name: String, domain: String?, colorArgb: Long, description: String?) {
+        collection.document(id).update(
+            mapOf("name" to name, "domain" to domain, "colorArgb" to colorArgb, "description" to description),
+        )
+    }
+
+    fun setDescription(id: String, description: String?) {
+        collection.document(id).update("description", description)
     }
 
     fun setLogo(id: String, logo: ByteArray?) {

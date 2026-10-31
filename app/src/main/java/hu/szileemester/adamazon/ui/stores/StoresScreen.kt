@@ -71,8 +71,8 @@ class StoresViewModel(private val c: AppContainer) : ViewModel() {
 
     val presets: List<StorePreset> get() = c.presets
 
-    fun addStore(name: String, domain: String?, colorArgb: Long) {
-        val id = c.stores.add(name, domain, colorArgb, sortIndex = summaries.value?.size ?: 0)
+    fun addStore(name: String, domain: String?, colorArgb: Long, description: String?) {
+        val id = c.stores.add(name, domain, colorArgb, sortIndex = summaries.value?.size ?: 0, description = description)
         if (!domain.isNullOrBlank()) {
             c.appScope.launch { c.logos.fetch(domain)?.let { c.stores.setLogo(id, it) } }
         }
@@ -111,8 +111,8 @@ fun StoresScreen(bottomBar: @Composable () -> Unit, openStore: (String) -> Unit)
         AddStoreDialog(
             presets = vm.presets,
             onDismiss = { adding = false },
-            onAdd = { name, domain, color ->
-                vm.addStore(name, domain, color)
+            onAdd = { name, domain, color, description ->
+                vm.addStore(name, domain, color, description)
                 adding = false
             },
         )

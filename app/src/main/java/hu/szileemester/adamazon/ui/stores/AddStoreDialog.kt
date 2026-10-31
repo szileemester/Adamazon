@@ -26,8 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import hu.szileemester.adamazon.data.StorePreset
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import hu.szileemester.adamazon.domain.Normalizer
+import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.components.ColorPicker
+import hu.szileemester.adamazon.ui.components.StoreDescriptionField
 
 /**
  * Typing filters the predefined stores; picking one fills name, website and colour.
@@ -37,10 +41,11 @@ import hu.szileemester.adamazon.ui.components.ColorPicker
 fun AddStoreDialog(
     presets: List<StorePreset>,
     onDismiss: () -> Unit,
-    onAdd: (name: String, domain: String?, colorArgb: Long) -> Unit,
+    onAdd: (name: String, domain: String?, colorArgb: Long, description: String?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var domain by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var color by remember { mutableLongStateOf(0L) }
     val matches = remember(name) {
         val key = Normalizer.key(name)
@@ -52,7 +57,7 @@ fun AddStoreDialog(
         onDismissRequest = onDismiss,
         title = { Text("Új üzlet") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -86,7 +91,9 @@ fun AddStoreDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
+                StoreDescriptionField(description, { description = it })
+                Spacer(Modifier.height(4.dp))
                 Text("Szín", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(4.dp))
                 ColorPicker(color) { color = it }
@@ -95,7 +102,7 @@ fun AddStoreDialog(
         confirmButton = {
             TextButton(
                 enabled = name.isNotBlank(),
-                onClick = { onAdd(Normalizer.clean(name), domain.ifBlank { null }, color) },
+                onClick = { onAdd(Normalizer.clean(name), domain.ifBlank { null }, color, Store.cleanDescription(description)) },
             ) { Text("Hozzáadás") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },

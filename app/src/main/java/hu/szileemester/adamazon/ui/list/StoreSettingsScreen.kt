@@ -62,6 +62,7 @@ import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.ColorPicker
 import hu.szileemester.adamazon.ui.components.ConfirmDialog
+import hu.szileemester.adamazon.ui.components.StoreDescriptionField
 import hu.szileemester.adamazon.ui.components.StoreLogo
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -79,7 +80,8 @@ class StoreSettingsViewModel(private val c: AppContainer, private val storeId: S
         store to CategoryOrder.ordered(categories, store?.categoryScores.orEmpty())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun save(name: String, domain: String?, color: Long) = c.stores.update(storeId, name, domain, color)
+    fun save(name: String, domain: String?, color: Long, description: String?) =
+        c.stores.update(storeId, name, domain, color, description)
 
     suspend fun fetchLogo(domain: String): Boolean {
         val logo = c.logos.fetch(domain) ?: return false
@@ -126,6 +128,7 @@ private fun StoreSettingsContent(
 ) {
     var name by remember { mutableStateOf(store.name) }
     var domain by remember { mutableStateOf(store.domain.orEmpty()) }
+    var description by remember { mutableStateOf(store.description.orEmpty()) }
     var color by remember { mutableLongStateOf(store.colorArgb) }
     var confirmDelete by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
@@ -156,7 +159,7 @@ private fun StoreSettingsContent(
                     IconButton(
                         enabled = name.isNotBlank(),
                         onClick = {
-                            vm.save(Normalizer.clean(name), domain.trim().ifBlank { null }, color)
+                            vm.save(Normalizer.clean(name), domain.trim().ifBlank { null }, color, Store.cleanDescription(description))
                             back()
                         },
                     ) { Icon(Icons.Default.Check, contentDescription = "Mentés") }
@@ -186,6 +189,7 @@ private fun StoreSettingsContent(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    StoreDescriptionField(description, { description = it })
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         StoreLogo(store, size = 56.dp)
                         Spacer(Modifier.width(12.dp))
