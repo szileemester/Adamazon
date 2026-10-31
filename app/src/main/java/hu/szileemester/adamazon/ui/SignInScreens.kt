@@ -67,18 +67,32 @@ fun NoAccessScreen(email: String) {
         message = "A(z) $email fiók nincs az engedélyezett felhasználók között. " +
             "Kérd meg az alkalmazás gazdáját, hogy vegyen fel.",
     ) {
-        Button(onClick = { scope.launch { container.auth.refresh() } }) { Text("Újra próbálom") }
+        Button(onClick = container.auth::refresh) { Text("Újra próbálom") }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = { scope.launch { container.auth.signOut(context) } }) { Text("Másik fiók") }
     }
 }
 
 @Composable
-fun ErrorScreen(message: String) {
+fun ErrorScreen(message: String, onRetry: (() -> Unit)? = null) {
     val container = appContainer()
-    val scope = rememberCoroutineScope()
     CenteredMessage(title = "Nem sikerült csatlakozni", message = message) {
-        Button(onClick = { scope.launch { container.auth.refresh() } }) { Text("Újra") }
+        Button(onClick = onRetry ?: container.auth::refresh) { Text("Újra") }
+    }
+}
+
+@Composable
+fun NoGroupScreen(email: String) {
+    val container = appContainer()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // No retry button: the app notices by itself when the account is put into a group.
+    CenteredMessage(
+        title = "Nincs csoporthoz rendelve",
+        message = "A(z) $email fiók engedélyezett, de még nem tartozik egyik csoporthoz sem. " +
+            "Kérd meg az alkalmazás gazdáját, hogy tegyen be egy csoportba.",
+    ) {
+        OutlinedButton(onClick = { scope.launch { container.auth.signOut(context) } }) { Text("Másik fiók") }
     }
 }
 

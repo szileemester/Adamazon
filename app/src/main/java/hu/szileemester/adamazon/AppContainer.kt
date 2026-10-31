@@ -5,14 +5,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import hu.szileemester.adamazon.data.AuthRepository
 import hu.szileemester.adamazon.data.BarcodeReader
-import hu.szileemester.adamazon.data.CardRepository
-import hu.szileemester.adamazon.data.CategoryRepository
+import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.data.ImageCompressor
-import hu.szileemester.adamazon.data.ItemRepository
-import hu.szileemester.adamazon.data.LearnedRepository
 import hu.szileemester.adamazon.data.LogoFetcher
 import hu.szileemester.adamazon.data.StorePresets
-import hu.szileemester.adamazon.data.StoreRepository
 import hu.szileemester.adamazon.data.ThemeSettings
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.DictionaryParser
@@ -28,11 +24,16 @@ class AppContainer(app: Application) {
     private val db = FirebaseFirestore.getInstance()
 
     val auth = AuthRepository(FirebaseAuth.getInstance(), db, appScope)
-    val categories = CategoryRepository(db)
-    val stores = StoreRepository(db)
-    val items = ItemRepository(db)
-    val learned = LearnedRepository(db)
-    val cards = CardRepository(db)
+
+    private var currentSession: GroupSession? = null
+
+    /** The signed-in user's group. Screens exist only while it is open (see AppRoot). */
+    val session: GroupSession
+        get() = checkNotNull(currentSession) { "No group session open" }
+
+    /** Opens [groupId]'s session, or keeps the current one if it is the same group. */
+    fun openSession(groupId: String): GroupSession =
+        currentSession?.takeIf { it.groupId == groupId } ?: GroupSession(db, groupId).also { currentSession = it }
 
     val theme = ThemeSettings(app)
     val images = ImageCompressor(app.contentResolver)

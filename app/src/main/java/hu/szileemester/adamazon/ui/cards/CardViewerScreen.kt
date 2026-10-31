@@ -43,10 +43,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 class CardViewerViewModel(c: AppContainer, cardId: String) : ViewModel() {
-    val card = combine(c.cards.card(cardId), c.stores.stores) { card, stores ->
+    val card = combine(c.session.cards.card(cardId), c.session.stores.stores) { card, stores ->
         card?.let { it to stores.firstOrNull { store -> store.id == it.storeId } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    val image = c.cards.image(cardId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val image = c.session.cards.image(cardId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }
 
 /**

@@ -60,9 +60,9 @@ data class StoreSummary(val store: Store, val openItems: List<Item>)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoresViewModel(private val c: AppContainer) : ViewModel() {
-    val summaries = c.stores.stores.flatMapLatest { stores ->
+    val summaries = c.session.stores.stores.flatMapLatest { stores ->
         if (stores.isEmpty()) return@flatMapLatest flowOf(emptyList())
-        combine(stores.map { store -> c.items.itemsOf(store.id).map { items -> StoreSummary(store, items.filter { !it.checked }) } }) {
+        combine(stores.map { store -> c.session.items.itemsOf(store.id).map { items -> StoreSummary(store, items.filter { !it.checked }) } }) {
             it.toList()
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -70,9 +70,11 @@ class StoresViewModel(private val c: AppContainer) : ViewModel() {
     val presets: List<StorePreset> get() = c.presets
 
     fun addStore(name: String, domain: String?, colorArgb: Long, description: String?) {
-        val id = c.stores.add(name, domain, colorArgb, sortIndex = summaries.value?.size ?: 0, description = description)
+        val id = c.session.stores.add(name, domain, colorArgb, sortIndex = summaries.value?.size ?: 0, description = description)
         if (!domain.isNullOrBlank()) {
-            c.appScope.launch { c.logos.fetch(domain)?.let { c.stores.setLogo(id, it) } }
+            // Taken now: the logo arrives later, possibly after a switch to another group.
+            val stores = c.session.stores
+            c.appScope.launch { c.logos.fetch(domain)?.let { stores.setLogo(id, it) } }
         }
     }
 

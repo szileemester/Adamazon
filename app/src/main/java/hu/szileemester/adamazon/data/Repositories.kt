@@ -1,5 +1,6 @@
 package hu.szileemester.adamazon.data
 
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -20,9 +21,12 @@ import kotlinx.coroutines.tasks.await
 
 // Writes are not awaited by callers that only need them queued: Firestore applies them to the
 // local cache immediately and syncs when online.
+//
+// Every repository works inside one group: [group] is groups/{groupId}, and all collections live
+// under it (see firestore.rules).
 
-class CategoryRepository(private val db: FirebaseFirestore) {
-    private val collection = db.collection("categories")
+class CategoryRepository(private val db: FirebaseFirestore, group: DocumentReference) {
+    private val collection = group.collection("categories")
 
     val categories: Flow<List<Category>> =
         collection.orderBy("sortIndex").snapshotFlow().map { s -> s.documents.map { it.toCategory() } }
@@ -82,8 +86,8 @@ class CategoryRepository(private val db: FirebaseFirestore) {
     }
 }
 
-class StoreRepository(private val db: FirebaseFirestore) {
-    private val collection = db.collection("stores")
+class StoreRepository(private val db: FirebaseFirestore, group: DocumentReference) {
+    private val collection = group.collection("stores")
 
     val stores: Flow<List<Store>> =
         collection.orderBy("sortIndex").snapshotFlow().map { s -> s.documents.map { it.toStore() } }
@@ -152,8 +156,8 @@ class StoreRepository(private val db: FirebaseFirestore) {
     }
 }
 
-class ItemRepository(private val db: FirebaseFirestore) {
-    private fun items(storeId: String) = db.collection("stores").document(storeId).collection("items")
+class ItemRepository(private val db: FirebaseFirestore, private val group: DocumentReference) {
+    private fun items(storeId: String) = group.collection("stores").document(storeId).collection("items")
 
     fun itemsOf(storeId: String): Flow<List<Item>> =
         items(storeId).orderBy("createdAt").snapshotFlow().map { s -> s.documents.map { it.toItem() } }
@@ -210,8 +214,8 @@ class ItemRepository(private val db: FirebaseFirestore) {
     }
 }
 
-class LearnedRepository(private val db: FirebaseFirestore) {
-    private val collection = db.collection("learned")
+class LearnedRepository(group: DocumentReference) {
+    private val collection = group.collection("learned")
 
     /** Keyed by [Normalizer.key] of the item name. */
     val learned: Flow<Map<String, LearnedMapping>> = collection.snapshotFlow().map { s ->
@@ -224,8 +228,8 @@ class LearnedRepository(private val db: FirebaseFirestore) {
     }
 }
 
-class CardRepository(private val db: FirebaseFirestore) {
-    private val collection = db.collection("cards")
+class CardRepository(private val db: FirebaseFirestore, group: DocumentReference) {
+    private val collection = group.collection("cards")
 
     val cards: Flow<List<LoyaltyCard>> =
         collection.orderBy("sortIndex").snapshotFlow().map { s -> s.documents.map { it.toCard() } }

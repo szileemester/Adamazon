@@ -39,13 +39,28 @@ firebase use --add
 firebase deploy --only firestore:rules
 ```
 
-## 3. Engedélyezett felhasználók
+## 3. Csoportok és felhasználók
 
-Firestore → **Gyűjtemény indítása** → azonosító: `allowedUsers`
+Minden felhasználó egy csoportba (háztartásba) tartozik, és csak a csoportja boltjait, listáit, kártyáit és kategóriáit látja. Ezt a Firestore szabályok kényszerítik ki. Mindent a Firebase konzolban, kézzel állítasz be, az app újratelepítése nélkül.
+
+**Új csoport:** Firestore → `groups` gyűjtemény → **Dokumentum hozzáadása**
+- Dokumentumazonosító: beszédes, rövid, ékezet nélküli név, pl. `kovacs-csalad`. Később nem nevezhető át, de sehol nem látszik.
+- Mező: `name` (string), ez jelenik meg az appban, pl. `Kovács család`. **Átnevezés:** csak ezt a mezőt kell átírni, és az app azonnal az új nevet mutatja.
+
+Az új csoport üresen, az alap kategóriákkal indul.
+
+**Új felhasználó:** Firestore → `allowedUsers` gyűjtemény → **Dokumentum hozzáadása**
 - Dokumentumazonosító: a Google-fiók e-mail címe **kisbetűvel**, pl. `szileemester@gmail.com`
-- Mező: `displayName` (string) – tetszőleges név
+- Mező: `displayName` (string), tetszőleges név, a csoport taglistájában látszik
+- Mező: `groupId` (string), a csoport dokumentumazonosítója, pl. `kovacs-csalad`
 
-Ismételd meg a második felhasználóval. Később ugyanígy vehetsz fel újakat, az app újratelepítése nélkül.
+Ha a `groupId` hiányzik, a felhasználó a „Nincs csoporthoz rendelve” képernyőt látja. Amint beírod, az app magától továbblép. A felhasználót a Play Console belső tesztelői közé is fel kell venni (5. lépés).
+
+**Áthelyezés másik csoportba:** írd át a `groupId` mezőt, és az app azonnal átvált. Csak a személy költözik: a boltok és listák a régi csoportnál maradnak.
+
+**Kizárás:** töröld az `allowedUsers` dokumentumot, és a hozzáférés azonnal megszűnik.
+
+**A csoportok előtti adatok** (egyszeri): a régi, legfelső szintű `categories`, `stores`, `learned` és `cards` gyűjteményeket az a csoport veszi át, amelynek a dokumentumában `legacyImport` (boolean) `true`. Az app az első induláskor átmásolja őket, majd beállítja a `migratedAt` mezőt. A régi gyűjtemények csak olvashatók maradnak. Ha az átmásolt adatok rendben vannak, törölhetők a konzolban.
 
 ## 4. Kipróbálás
 

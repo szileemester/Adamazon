@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 class CardsViewModel(c: AppContainer) : ViewModel() {
-    val cards = combine(c.cards.cards, c.stores.stores) { cards, stores ->
+    val cards = combine(c.session.cards.cards, c.session.stores.stores) { cards, stores ->
         cards.map { card -> card to stores.firstOrNull { it.id == card.storeId } }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

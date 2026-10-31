@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// Only e-mail addresses listed in /allowedUsers may read or write anything.
-// New users are added by hand in the Firebase console (document id = lowercase e-mail).
+// Only e-mail addresses listed in /allowedUsers may read or write anything, and only inside their
+// own group: allowedUsers/{lowercase e-mail}.groupId names a document in /groups, and everything a
+// household shares lives under it. Groups and members are managed by hand in the Firebase console.
 //
 // Writes are also validated: only the fields the app uses, with sane types and sizes, so a bug
 // or a damaged client cannot fill the shared data with junk. Keep in sync with data/Repositories.kt.
@@ -12,9 +13,27 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
     function allowed() {
-      return signedIn() &&
-        exists(/databases/$(database)/documents/allowedUsers/$(request.auth.token.email.lower()));
+      return signedIn() && exists(/databases/$(database)/documents/allowedUsers/$(myEmail()));
+    }
+
+    function myGroup() {
+      return get(/databases/$(database)/documents/allowedUsers/$(myEmail())).data.get('groupId', '');
+    }
+
+    function inGroup(g) {
+      return allowed() && myGroup() != '' && myGroup() == g;
+    }
+
+    // The data from before groups existed stays readable, for the one-time copy into the group
+    // that is flagged with legacyImport. Nobody can write it any more.
+    function legacyReader() {
+      return allowed() && myGroup() != '' &&
+        get(/databases/$(database)/documents/groups/$(myGroup())).data.get('legacyImport', false) == true;
     }
 
     // --- field helpers (d = the document as it will look after the write) ---
@@ -89,39 +108,76 @@ service cloud.firestore {
     // --- access ---
 
     match /allowedUsers/{email} {
-      allow read: if signedIn() && request.auth.token.email.lower() == email;
+      // Your own entry, and your group's members (the member list in Settings).
+      allow read: if signedIn() && (myEmail() == email ||
+        (resource.data.get('groupId', '') != '' && inGroup(resource.data.groupId)));
       allow write: if false;
     }
 
+    match /groups/{g} {
+      allow read: if inGroup(g);
+      // Members only mark the legacy copy as done; groups are created and named in the console.
+      allow update: if inGroup(g) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['migratedAt']) &&
+        request.resource.data.migratedAt is int;
+      allow create, delete: if false;
+
+      match /categories/{id} {
+        allow read: if inGroup(g);
+        allow create, update: if inGroup(g) && validCategory(request.resource.data);
+        // "Egyéb" is the fallback for unknown categories and must always exist.
+        allow delete: if inGroup(g) && id != 'egyeb';
+      }
+
+      match /stores/{storeId} {
+        allow read, delete: if inGroup(g);
+        allow create, update: if inGroup(g) && validStore(request.resource.data);
+
+        match /items/{itemId} {
+          allow read, delete: if inGroup(g);
+          allow create, update: if inGroup(g) && validItem(request.resource.data);
+        }
+      }
+
+      match /learned/{id} {
+        allow read, delete: if inGroup(g);
+        allow create, update: if inGroup(g) && validLearned(request.resource.data);
+      }
+
+      match /cards/{cardId} {
+        allow read, delete: if inGroup(g);
+        allow create, update: if inGroup(g) && validCard(request.resource.data);
+
+        match /images/{side} {
+          allow read, delete: if inGroup(g);
+          allow create, update: if inGroup(g) && side in ['front', 'back'] && validCardImage(request.resource.data);
+        }
+      }
+    }
+
+    // --- pre-group data: read-only, see legacyReader() ---
+
     match /categories/{id} {
-      allow read: if allowed();
-      allow create, update: if allowed() && validCategory(request.resource.data);
-      // "Egyéb" is the fallback for unknown categories and must always exist.
-      allow delete: if allowed() && id != 'egyeb';
+      allow read: if legacyReader();
     }
 
     match /stores/{storeId} {
-      allow read, delete: if allowed();
-      allow create, update: if allowed() && validStore(request.resource.data);
+      allow read: if legacyReader();
 
       match /items/{itemId} {
-        allow read, delete: if allowed();
-        allow create, update: if allowed() && validItem(request.resource.data);
+        allow read: if legacyReader();
       }
     }
 
     match /learned/{id} {
-      allow read, delete: if allowed();
-      allow create, update: if allowed() && validLearned(request.resource.data);
+      allow read: if legacyReader();
     }
 
     match /cards/{cardId} {
-      allow read, delete: if allowed();
-      allow create, update: if allowed() && validCard(request.resource.data);
+      allow read: if legacyReader();
 
       match /images/{side} {
-        allow read, delete: if allowed();
-        allow create, update: if allowed() && side in ['front', 'back'] && validCardImage(request.resource.data);
+        allow read: if legacyReader();
       }
     }
   }

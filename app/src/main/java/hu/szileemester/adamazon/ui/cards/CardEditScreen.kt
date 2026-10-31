@@ -77,11 +77,11 @@ sealed interface CardImage {
 }
 
 class CardEditViewModel(private val c: AppContainer, private val cardId: String?) : ViewModel() {
-    val stores = c.stores.stores.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val stores = c.session.stores.stores.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     suspend fun load(): Pair<LoyaltyCard?, ByteArray?> {
         if (cardId == null) return null to null
-        return c.cards.card(cardId).first() to c.cards.image(cardId).first()
+        return c.session.cards.card(cardId).first() to c.session.cards.image(cardId).first()
     }
 
     suspend fun scan(uri: Uri): CardBarcode? = c.barcodes.read(uri)
@@ -90,11 +90,11 @@ class CardEditViewModel(private val c: AppContainer, private val cardId: String?
         val newImage = (image as? CardImage.Picked)?.let {
             CardRepository.NewImage(c.images.cardImage(it.uri), c.images.thumbnail(it.uri), it.barcode)
         }
-        val count = c.cards.cards.first().size
-        c.cards.save(cardId, name, storeId, sortIndex = count, newImage = newImage)
+        val count = c.session.cards.cards.first().size
+        c.session.cards.save(cardId, name, storeId, sortIndex = count, newImage = newImage)
     }
 
-    fun delete() = cardId?.let(c.cards::delete)
+    fun delete() = cardId?.let(c.session.cards::delete)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

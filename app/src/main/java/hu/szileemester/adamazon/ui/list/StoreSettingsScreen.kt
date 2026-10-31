@@ -74,36 +74,38 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 class StoreSettingsViewModel(private val c: AppContainer, private val storeId: String) : ViewModel() {
     val state = combine(
-        c.stores.store(storeId),
-        c.categories.categories.map { it.ifEmpty { CategoryRepository.DEFAULT_CATEGORIES } },
+        c.session.stores.store(storeId),
+        c.session.categories.categories.map { it.ifEmpty { CategoryRepository.DEFAULT_CATEGORIES } },
     ) { store, categories ->
         store to CategoryOrder.ordered(categories, store?.categoryScores.orEmpty())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun save(name: String, domain: String?, color: Long, description: String?) =
-        c.stores.update(storeId, name, domain, color, description)
+        c.session.stores.update(storeId, name, domain, color, description)
 
     suspend fun fetchLogo(domain: String): Boolean {
         val logo = c.logos.fetch(domain) ?: return false
-        c.stores.setLogo(storeId, logo)
+        c.session.stores.setLogo(storeId, logo)
         return true
     }
 
     fun pickLogo(uri: Uri) = viewModelScope.launch {
-        runCatching { c.images.logo(uri) }.onSuccess { c.stores.setLogo(storeId, it) }
+        runCatching { c.images.logo(uri) }.onSuccess { c.session.stores.setLogo(storeId, it) }
     }
 
-    fun removeLogo() = c.stores.setLogo(storeId, null)
+    fun removeLogo() = c.session.stores.setLogo(storeId, null)
 
     fun setOrder(ids: List<String>, locked: Boolean) =
-        c.stores.setCategoryOrder(storeId, CategoryOrder.scoresFromOrder(ids), locked)
+        c.session.stores.setCategoryOrder(storeId, CategoryOrder.scoresFromOrder(ids), locked)
 
-    fun setLocked(locked: Boolean) = c.stores.setOrderLocked(storeId, locked)
+    fun setLocked(locked: Boolean) = c.session.stores.setOrderLocked(storeId, locked)
 
-    fun resetOrder() = c.stores.setCategoryOrder(storeId, emptyMap(), locked = false)
+    fun resetOrder() = c.session.stores.setCategoryOrder(storeId, emptyMap(), locked = false)
 
     fun delete() {
-        c.appScope.launch { c.stores.delete(storeId) }
+        // Taken now: the deletion may outlive this screen, even a switch to another group.
+        val stores = c.session.stores
+        c.appScope.launch { stores.delete(storeId) }
     }
 }
 

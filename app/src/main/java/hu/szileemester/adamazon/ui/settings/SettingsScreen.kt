@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -57,25 +58,29 @@ import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.CategoryDialog
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 class SettingsViewModel(val c: AppContainer) : ViewModel() {
-    val categories = c.categories.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val categories = c.session.categories.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val email: String? get() = (c.auth.state.value as? AccessState.Allowed)?.user?.email
+    val group = c.auth.state.map { (it as? AccessState.Allowed)?.group }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val members = c.session.members.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun save(category: Category) {
         if (category.id.isEmpty()) {
-            c.categories.add(category.name, category.emoji, categories.value)
+            c.session.categories.add(category.name, category.emoji, categories.value)
         } else {
-            c.categories.update(category)
+            c.session.categories.update(category)
         }
     }
 
-    fun delete(category: Category) = c.categories.delete(category.id)
-    fun reorder(ids: List<String>) = c.categories.reorder(ids)
+    fun delete(category: Category) = c.session.categories.delete(category.id)
+    fun reorder(ids: List<String>) = c.session.categories.reorder(ids)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,6 +89,8 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
     val vm = appViewModel { SettingsViewModel(it) }
     val categories by vm.categories.collectAsStateWithLifecycle()
     val themeMode by vm.c.theme.mode.collectAsStateWithLifecycle()
+    val group by vm.group.collectAsStateWithLifecycle()
+    val members by vm.members.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Category?>(null) }
@@ -104,6 +111,19 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             item(key = "account") {
+                // Groups and members are managed in the Firebase console; here they are only shown.
+                Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
+                    Text("Csoport", style = MaterialTheme.typography.titleMedium)
+                    Text(group?.name.orEmpty(), style = MaterialTheme.typography.bodyLarge)
+                }
+                members.forEach { member ->
+                    ListItem(
+                        headlineContent = { Text(member.displayName.ifBlank { member.email }) },
+                        supportingContent = if (member.displayName.isBlank()) null else ({ Text(member.email) }),
+                        leadingContent = { Icon(Icons.Default.Person, contentDescription = null) },
+                    )
+                }
+                HorizontalDivider()
                 ListItem(
                     headlineContent = { Text("Bejelentkezve") },
                     supportingContent = { Text(vm.email.orEmpty()) },

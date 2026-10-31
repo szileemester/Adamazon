@@ -1,6 +1,10 @@
 package hu.szileemester.adamazon.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CreditCard
@@ -14,9 +18,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -26,6 +36,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import hu.szileemester.adamazon.AppContainer
 import hu.szileemester.adamazon.data.AccessState
+import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.ui.cards.CardEditScreen
 import hu.szileemester.adamazon.ui.cards.CardViewerScreen
 import hu.szileemester.adamazon.ui.cards.CardsScreen
@@ -44,11 +55,41 @@ fun AppRoot(container: AppContainer) {
         }
         AccessState.SignedOut -> SignInScreen()
         is AccessState.NoAccess -> NoAccessScreen(s.email)
+        is AccessState.NoGroup -> NoGroupScreen(s.email)
         is AccessState.Error -> ErrorScreen(s.message)
         is AccessState.Allowed -> {
-            LaunchedEffect(Unit) { container.categories.seedDefaultsIfEmpty() }
-            MainNavigation()
+            val session = remember(s.group.id) { container.openSession(s.group.id) }
+            if (s.group.needsLegacyImport) {
+                // Ends by itself: the copy sets migratedAt, and the live group update clears the flag.
+                MigrationScreen(session)
+            } else {
+                // A new group (also after a move to another group) starts with fresh screens.
+                key(session.groupId) {
+                    LaunchedEffect(Unit) { session.categories.seedDefaultsIfEmpty() }
+                    MainNavigation()
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun MigrationScreen(session: GroupSession) {
+    var error by remember(session) { mutableStateOf<String?>(null) }
+    var attempt by remember(session) { mutableIntStateOf(0) }
+    LaunchedEffect(session, attempt) {
+        error = null
+        runCatching { session.migration.run() }.onFailure { error = it.message ?: it.javaClass.simpleName }
+    }
+    val message = error
+    if (message == null) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator()
+            Spacer(Modifier.height(16.dp))
+            Text("Adatok átköltöztetése…")
+        }
+    } else {
+        ErrorScreen("Az adatok átköltöztetése nem sikerült: $message", onRetry = { attempt++ })
     }
 }
 

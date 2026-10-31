@@ -43,9 +43,9 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 class StoreOrderViewModel(private val c: AppContainer) : ViewModel() {
-    val stores = c.stores.stores.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val stores = c.session.stores.stores.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun save(order: List<Store>) = c.stores.reorder(order.map { it.id })
+    fun save(order: List<Store>) = c.session.stores.reorder(order.map { it.id })
 }
 
 /**

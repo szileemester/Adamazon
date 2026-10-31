@@ -50,16 +50,16 @@ sealed interface ListEvent {
 }
 
 class StoreListViewModel(private val c: AppContainer, private val storeId: String) : ViewModel() {
-    private val categories = c.categories.categories.map { it.ifEmpty { CategoryRepository.DEFAULT_CATEGORIES } }
+    private val categories = c.session.categories.categories.map { it.ifEmpty { CategoryRepository.DEFAULT_CATEGORIES } }
 
     val learned: StateFlow<Map<String, LearnedMapping>> =
-        c.learned.learned.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        c.session.learned.learned.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     val state: StateFlow<StoreListState> = combine(
-        c.stores.store(storeId),
-        c.items.itemsOf(storeId),
+        c.session.stores.store(storeId),
+        c.session.items.itemsOf(storeId),
         categories,
-        c.cards.cards,
+        c.session.cards.cards,
     ) { store, items, categories, cards ->
         val ordered = CategoryOrder.ordered(categories, store?.categoryScores.orEmpty())
         val byCategory = items.filter { !it.checked }.groupBy { resolveCategory(it.categoryId, categories) }
@@ -81,7 +81,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         get() = (c.auth.state.value as? AccessState.Allowed)?.user?.email
 
     /** Stores an item can be moved to. */
-    val otherStores: StateFlow<List<Store>> = c.stores.stores.map { all -> all.filter { it.id != storeId } }
+    val otherStores: StateFlow<List<Store>> = c.session.stores.stores.map { all -> all.filter { it.id != storeId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // In-memory, per screen: guards against mis-taps, not a full history. Learning side effects
@@ -99,7 +99,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
     fun undo() {
         val (entry, rest) = _undo.value.pop() ?: return
         _undo.value = rest
-        c.items.writeAll(entry.before)
+        c.session.items.writeAll(entry.before)
         _events.trySend(ListEvent.Undone(entry.label))
     }
 
@@ -123,12 +123,12 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
             is AddItemDecision.AlreadyOnList -> _events.trySend(ListEvent.AlreadyOnList(decision.item.name))
             is AddItemDecision.Restore -> {
                 record("„${decision.item.name}” felvétele", mapOf(here(decision.item.id) to decision.item))
-                c.items.restore(storeId, decision.item.id, decision.quantity, System.currentTimeMillis())
+                c.session.items.restore(storeId, decision.item.id, decision.quantity, System.currentTimeMillis())
             }
             is AddItemDecision.Create -> {
-                val id = c.items.newId(storeId)
+                val id = c.session.items.newId(storeId)
                 val item = newItem(id, decision.name, decision.quantity, current.categories, System.currentTimeMillis())
-                c.items.writeAll(mapOf(here(id) to item))
+                c.session.items.writeAll(mapOf(here(id) to item))
                 record("„${decision.name}” felvétele", mapOf(here(id) to null))
             }
         }
@@ -185,7 +185,7 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
                     items.replaceAll { if (it.id == restored.id) restored else it }
                 }
                 is AddItemDecision.Create -> {
-                    val item = newItem(c.items.newId(storeId), decision.name, decision.quantity, current.categories, now + index)
+                    val item = newItem(c.session.items.newId(storeId), decision.name, decision.quantity, current.categories, now + index)
                     before[here(item.id)] = null
                     after[here(item.id)] = item
                     items += item
@@ -195,17 +195,17 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         }
         if (after.isEmpty()) return
         record("${after.size} elem beillesztése", before)
-        c.items.writeAll(after)
+        c.session.items.writeAll(after)
     }
 
     fun toggle(item: Item) {
         val now = System.currentTimeMillis()
         record(if (item.checked) "„${item.name}” visszaállítása" else "„${item.name}” kipipálása", mapOf(here(item.id) to item))
         if (item.checked) {
-            c.items.setChecked(storeId, item.id, checked = false, now = now)
+            c.session.items.setChecked(storeId, item.id, checked = false, now = now)
             return
         }
-        c.items.setChecked(storeId, item.id, checked = true, now = now)
+        c.session.items.setChecked(storeId, item.id, checked = true, now = now)
         val current = state.value
         val store = current.store ?: return
         val result = CategoryOrder.onItemChecked(
@@ -215,12 +215,12 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
             now = now,
             openItemsLeft = current.items.count { !it.checked && it.id != item.id },
         )
-        c.stores.updateSession(storeId, result.session, result.newScores)
+        c.session.stores.updateSession(storeId, result.session, result.newScores)
     }
 
     fun delete(item: Item) {
         record("„${item.name}” törlése", mapOf(here(item.id) to item))
-        c.items.delete(storeId, item.id)
+        c.session.items.delete(storeId, item.id)
         _events.trySend(ListEvent.Deleted(item))
     }
 
@@ -228,14 +228,14 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         val checked = state.value.checked
         if (checked.isEmpty()) return
         record("Kipipáltak törlése", checked.associate { here(it.id) to it })
-        c.items.deleteAll(storeId, checked.map { it.id })
+        c.session.items.deleteAll(storeId, checked.map { it.id })
     }
 
-    fun setDescription(description: String?) = c.stores.setDescription(storeId, description)
+    fun setDescription(description: String?) = c.session.stores.setDescription(storeId, description)
 
     /** Creates a category from the item editor and returns its id, so it can be selected at once. */
     fun createCategory(name: String, emoji: String): String =
-        c.categories.add(name, emoji, state.value.categories)
+        c.session.categories.add(name, emoji, state.value.categories)
 
     /**
      * Saves an edited item, moving it to [targetStoreId] when that differs from this store.
@@ -245,16 +245,16 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
         if (targetStoreId != storeId) {
             val target = ItemRef(targetStoreId, original.id)
             record("„${original.name}” áthelyezése", mapOf(here(original.id) to original, target to null))
-            c.items.writeAll(mapOf(here(original.id) to null, target to edited.copy(createdAt = System.currentTimeMillis())))
+            c.session.items.writeAll(mapOf(here(original.id) to null, target to edited.copy(createdAt = System.currentTimeMillis())))
             val storeName = otherStores.value.firstOrNull { it.id == targetStoreId }?.name.orEmpty()
             _events.trySend(ListEvent.Moved(edited.name, storeName))
         } else {
             if (edited == original) return
             record("„${original.name}” szerkesztése", mapOf(here(original.id) to original))
-            c.items.update(storeId, edited)
+            c.session.items.update(storeId, edited)
         }
         if (edited.categoryId != original.categoryId || edited.emoji != original.emoji || edited.key != original.key) {
-            c.learned.remember(edited.name, edited.categoryId, edited.emoji)
+            c.session.learned.remember(edited.name, edited.categoryId, edited.emoji)
         }
     }
 
