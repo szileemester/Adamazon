@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
@@ -85,7 +86,7 @@ class SettingsViewModel(val c: AppContainer) : ViewModel() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(bottomBar: @Composable () -> Unit) {
+fun SettingsScreen(bottomBar: @Composable () -> Unit, openHelp: () -> Unit) {
     val vm = appViewModel { SettingsViewModel(it) }
     val categories by vm.categories.collectAsStateWithLifecycle()
     val themeMode by vm.c.theme.mode.collectAsStateWithLifecycle()
@@ -134,6 +135,13 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit) {
                             Text("Kijelentkezés")
                         }
                     },
+                )
+                HorizontalDivider()
+                ListItem(
+                    headlineContent = { Text("Súgó") },
+                    supportingContent = { Text("Az alkalmazás funkcióinak bemutatása") },
+                    leadingContent = { Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = null) },
+                    modifier = Modifier.clickable(onClick = openHelp),
                 )
                 HorizontalDivider()
                 Column(Modifier.padding(16.dp)) {

@@ -6,6 +6,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import hu.szileemester.adamazon.data.AuthRepository
 import hu.szileemester.adamazon.data.BarcodeReader
 import hu.szileemester.adamazon.data.GroupSession
+import hu.szileemester.adamazon.data.HelpSettings
 import hu.szileemester.adamazon.data.ImageCompressor
 import hu.szileemester.adamazon.data.LogoFetcher
 import hu.szileemester.adamazon.data.StorePresets
@@ -36,6 +37,7 @@ class AppContainer(app: Application) {
         currentSession?.takeIf { it.groupId == groupId } ?: GroupSession(db, groupId).also { currentSession = it }
 
     val theme = ThemeSettings(app)
+    val help = HelpSettings(app)
     val images = ImageCompressor(app.contentResolver)
     val logos = LogoFetcher()
     val barcodes = BarcodeReader(app)

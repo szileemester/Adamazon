@@ -41,6 +41,7 @@ import hu.szileemester.adamazon.data.AccessState
 import hu.szileemester.adamazon.data.DataErrors
 import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.ui.cards.CardEditScreen
+import hu.szileemester.adamazon.ui.help.HelpScreen
 import hu.szileemester.adamazon.ui.cards.CardViewerScreen
 import hu.szileemester.adamazon.ui.cards.CardsScreen
 import hu.szileemester.adamazon.ui.list.StoreListScreen
@@ -79,7 +80,9 @@ fun AppRoot(container: AppContainer) {
                 // A new group (also after a move to another group) starts with fresh screens.
                 key(session.groupId) {
                     LaunchedEffect(Unit) { session.categories.seedDefaultsIfEmpty() }
-                    MainNavigation()
+                    val helpSeen by container.help.seen.collectAsStateWithLifecycle()
+                    // The feature tour opens by itself once per device; later it is in Settings.
+                    if (helpSeen) MainNavigation() else HelpScreen(onClose = container.help::markSeen)
                 }
             }
         }
@@ -111,6 +114,7 @@ object Routes {
     const val STORE_ORDER = "stores/order"
     const val CARDS = "cards"
     const val SETTINGS = "settings"
+    const val HELP = "help"
     const val STORE = "store/{id}"
     const val STORE_SETTINGS = "store/{id}/settings"
     const val CARD = "card/{id}"
@@ -161,7 +165,8 @@ private fun MainNavigation() {
                 newCard = { nav.navigate(Routes.cardEdit(null)) },
             )
         }
-        composable(Routes.SETTINGS) { SettingsScreen(bottomBar = bottomBar) }
+        composable(Routes.SETTINGS) { SettingsScreen(bottomBar = bottomBar, openHelp = { nav.navigate(Routes.HELP) }) }
+        composable(Routes.HELP) { HelpScreen(onClose = nav::back) }
         composable(Routes.STORE) { entry ->
             val id = entry.arguments?.getString("id").orEmpty()
             StoreListScreen(
