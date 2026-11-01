@@ -35,4 +35,11 @@ class PastedTextTest {
         assertTrue(PastedText.isMultiLine("tej\nkenyér"))
         assertFalse(PastedText.isMultiLine("tej"))
     }
+
+    @Test
+    fun `typed items are separated by comma and space only`() {
+        assertEquals(listOf("tej", "kenyér", "1,5 l kóla"), PastedText.typedItems("tej, kenyér, 1,5 l kóla"))
+        assertEquals(listOf("só,bors"), PastedText.typedItems("só,bors"))
+        assertEquals(listOf("alma"), PastedText.typedItems("alma, "))
+    }
 }

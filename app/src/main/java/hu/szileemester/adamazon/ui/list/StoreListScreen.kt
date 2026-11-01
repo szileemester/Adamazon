@@ -234,7 +234,14 @@ fun StoreListScreen(
                         }
                     },
                     onSubmit = {
-                        vm.add(input)
+                        // "tej, kenyér, 1,5 l kóla" is three items, confirmed like a pasted list.
+                        val items = PastedText.typedItems(input)
+                        if (items.size > 1) {
+                            pastedTitle = "Több tétel"
+                            pasted = vm.previewLines(items)
+                        } else {
+                            vm.add(input)
+                        }
                         input = ""
                     },
                     suggestions = remember(input, state.items, learned) { suggestions(input, state.items, learned.values) },

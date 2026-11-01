@@ -10,6 +10,13 @@ object PastedText {
     /** True for pasted text with line breaks; typed input is always a single line. */
     fun isMultiLine(text: String): Boolean = text.contains('\n') && lines(text).isNotEmpty()
 
+    /**
+     * Items typed into the quick-add field, separated by ", " – the space is required, so a
+     * decimal comma ("1,5 l tej") never splits.
+     */
+    fun typedItems(text: String): List<String> =
+        text.split(", ").map { it.trim() }.filter { it.isNotEmpty() }
+
     fun lines(text: String): List<String> =
         text.split('\n', '\r')
             .map { MARKER.replace(it, "").trim() }

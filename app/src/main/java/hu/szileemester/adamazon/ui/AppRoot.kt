@@ -131,6 +131,14 @@ private val tabs = listOf(
     Tab(Routes.SETTINGS, "Beállítások", Icons.Default.Settings),
 )
 
+/**
+ * Goes back one screen, but never past the first one: a quick double tap on a back arrow would
+ * otherwise also pop the start screen and leave an empty window with no way out.
+ */
+private fun NavController.back() {
+    if (previousBackStackEntry != null) popBackStack()
+}
+
 @Composable
 private fun MainNavigation() {
     val nav = rememberNavController()
@@ -144,7 +152,7 @@ private fun MainNavigation() {
             )
         }
         composable(Routes.STORE_ORDER) {
-            StoreOrderScreen(back = { nav.popBackStack() })
+            StoreOrderScreen(back = nav::back)
         }
         composable(Routes.CARDS) {
             CardsScreen(
@@ -158,7 +166,7 @@ private fun MainNavigation() {
             val id = entry.arguments?.getString("id").orEmpty()
             StoreListScreen(
                 storeId = id,
-                back = { nav.popBackStack() },
+                back = nav::back,
                 openSettings = { nav.navigate(Routes.storeSettings(id)) },
                 openCard = { nav.navigate(Routes.card(it)) },
             )
@@ -166,19 +174,19 @@ private fun MainNavigation() {
         composable(Routes.STORE_SETTINGS) { entry ->
             StoreSettingsScreen(
                 storeId = entry.arguments?.getString("id").orEmpty(),
-                back = { nav.popBackStack() },
+                back = nav::back,
                 deleted = { nav.popBackStack(Routes.STORES, inclusive = false) },
             )
         }
         composable(Routes.CARD) { entry ->
             val id = entry.arguments?.getString("id").orEmpty()
-            CardViewerScreen(cardId = id, back = { nav.popBackStack() }, edit = { nav.navigate(Routes.cardEdit(id)) })
+            CardViewerScreen(cardId = id, back = nav::back, edit = { nav.navigate(Routes.cardEdit(id)) })
         }
         composable(Routes.CARD_EDIT) { entry ->
             val id = entry.arguments?.getString("id")?.takeIf { it != Routes.NEW }
             CardEditScreen(
                 cardId = id,
-                back = { nav.popBackStack() },
+                back = nav::back,
                 deleted = { nav.popBackStack(Routes.CARDS, inclusive = false) },
             )
         }
