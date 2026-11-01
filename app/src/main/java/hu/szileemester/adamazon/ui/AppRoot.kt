@@ -46,6 +46,7 @@ import hu.szileemester.adamazon.ui.cards.CardViewerScreen
 import hu.szileemester.adamazon.ui.cards.CardsScreen
 import hu.szileemester.adamazon.ui.list.StoreListScreen
 import hu.szileemester.adamazon.ui.list.StoreSettingsScreen
+import hu.szileemester.adamazon.ui.settings.CategoriesScreen
 import hu.szileemester.adamazon.ui.settings.SettingsScreen
 import hu.szileemester.adamazon.ui.stores.StoreOrderScreen
 import hu.szileemester.adamazon.ui.stores.StoresScreen
@@ -115,6 +116,7 @@ object Routes {
     const val CARDS = "cards"
     const val SETTINGS = "settings"
     const val HELP = "help"
+    const val CATEGORIES = "settings/categories"
     const val STORE = "store/{id}"
     const val STORE_SETTINGS = "store/{id}/settings"
     const val CARD = "card/{id}"
@@ -165,7 +167,14 @@ private fun MainNavigation() {
                 newCard = { nav.navigate(Routes.cardEdit(null)) },
             )
         }
-        composable(Routes.SETTINGS) { SettingsScreen(bottomBar = bottomBar, openHelp = { nav.navigate(Routes.HELP) }) }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                bottomBar = bottomBar,
+                openCategories = { nav.navigate(Routes.CATEGORIES) },
+                openHelp = { nav.navigate(Routes.HELP) },
+            )
+        }
+        composable(Routes.CATEGORIES) { CategoriesScreen(back = nav::back) }
         composable(Routes.HELP) { HelpScreen(onClose = nav::back) }
         composable(Routes.STORE) { entry ->
             val id = entry.arguments?.getString("id").orEmpty()
