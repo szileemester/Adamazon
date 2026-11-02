@@ -93,6 +93,11 @@ Az első belépéskor az app létrehozza az alapkategóriákat.
 7. **Fontos:** Play Console → Beállítás → **Alkalmazásaláírás** → másold ki az *alkalmazásaláíró kulcs* **SHA-1** ujjlenyomatát,
    és add hozzá a Firebase-ben: Projektbeállítások → Android-app → **Ujjlenyomat hozzáadása**.
    Enélkül a Play-ről telepített appban nem működik a Google-bejelentkezés.
+   Az oldal helye: Play Console → **Alkalmazásvédelem** → Google Play Áruház-védelem → Play alkalmazásaláírás.
+   Ugyanezt a SHA-1-et vedd fel az API-kulcs korlátozásai közé is:
+   <https://console.cloud.google.com/apis/credentials> → **Android key (auto created by Firebase)** →
+   Application restrictions → Android apps → **Add** (csomagnév + SHA-1) → Save.
+   Ha ez kimarad, bejelentkezéskor ez a hiba jelenik meg: *„Requests from this Android client application … are blocked”*.
 8. A Play Console kérheti az *Alkalmazás tartalma* részt (adatvédelmi irányelvek, adatbiztonság). Rövid válasz:
    az app Google-fiók e-mail címet és a felhasználó által beírt listaelemeket/képeket tárol a Firebase-ben,
    harmadik félnek nem adja át, a fiók törlése kérésre lehetséges.
