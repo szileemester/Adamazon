@@ -79,7 +79,7 @@ class LegacyMigration(private val db: FirebaseFirestore, private val group: Docu
         val CATEGORY_FIELDS = setOf("name", "emoji", "sortIndex")
         val LEARNED_FIELDS = setOf("displayName", "categoryId", "emoji")
         val STORE_FIELDS = setOf("name", "domain", "description", "colorArgb", "logo", "sortIndex", "orderLocked", "categoryScores", "session")
-        val ITEM_FIELDS = setOf("name", "quantity", "categoryId", "emoji", "checked", "checkedAt", "createdAt", "createdBy")
+        val ITEM_FIELDS = setOf("name", "quantity", "note", "categoryId", "emoji", "checked", "checkedAt", "createdAt", "createdBy")
         val CARD_FIELDS = setOf("name", "storeId", "sortIndex", "thumb", "barcodeValue", "barcodeFormat")
         val IMAGE_FIELDS = setOf("data")
     }

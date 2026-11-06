@@ -22,6 +22,7 @@ import android.graphics.Paint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /** Manual dependency container – the app is small enough not to need a DI framework. */
 class AppContainer(app: Application) {
@@ -62,5 +63,10 @@ class AppContainer(app: Application) {
         val catalog = EmojiCatalog.parse(app.assets.open("emoji_hu.json").bufferedReader().use { it.readText() })
         val paint = Paint()
         EmojiCatalog(catalog.entries.filter { paint.hasGlyph(it.emoji) })
+    }
+
+    init {
+        // Parsing ~1900 emoji takes a moment: done ahead, so the icon picker opens at once.
+        appScope.launch(Dispatchers.Default) { emojis }
     }
 }

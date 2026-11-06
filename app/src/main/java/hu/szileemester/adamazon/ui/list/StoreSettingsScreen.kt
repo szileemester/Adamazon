@@ -62,6 +62,7 @@ import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.ColorPicker
 import hu.szileemester.adamazon.ui.components.ConfirmDialog
 import hu.szileemester.adamazon.ui.components.StoreDescriptionField
+import hu.szileemester.adamazon.ui.components.ItemIcon
 import hu.szileemester.adamazon.ui.components.StoreLogo
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -240,7 +241,8 @@ private fun StoreSettingsContent(
             items(order, key = { it.id }) { category ->
                 ReorderableItem(reorderState, key = category.id) { dragging ->
                     ListItem(
-                        headlineContent = { Text("${category.emoji}  ${category.name}") },
+                        headlineContent = { Text(category.name) },
+                        leadingContent = { ItemIcon(category.emoji, size = 24.dp) },
                         trailingContent = {
                             Icon(
                                 Icons.Default.DragHandle,

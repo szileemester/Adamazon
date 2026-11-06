@@ -1,6 +1,6 @@
 package hu.szileemester.adamazon.domain
 
-import java.net.URI
+import java.net.URL
 
 /**
  * Where a store's website keeps its logo, best first: big touch icons, sized or vector site icons,
@@ -67,7 +67,8 @@ internal object HtmlTags {
     /** An absolute http(s) address for [target] on [pageUrl]; null for inline (data:) images. */
     fun resolve(pageUrl: String, target: String): String? {
         if (target.isBlank() || target.startsWith("data:")) return null
-        return runCatching { URI(pageUrl).resolve(target.trim().replace(" ", "%20")).toString() }
-            .getOrNull()?.takeIf { it.startsWith("http") }
+        // URL, not URI: it also takes the unencoded spaces and accents that real pages contain.
+        return runCatching { URL(URL(pageUrl), target.trim()).toString() }
+            .getOrNull()?.takeIf { it.startsWith("http://") || it.startsWith("https://") }
     }
 }

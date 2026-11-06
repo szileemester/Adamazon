@@ -22,8 +22,8 @@ class LogoFetcher(private val web: WebImages) {
         favicon(host) ?: siteLogo(host)
     }
 
-    /** A picked image file: photo, PNG or SVG. Null if it cannot be read. */
-    suspend fun fromFile(uri: Uri): ByteArray? = withContext(Dispatchers.IO) { web.read(uri)?.let { render(it) } }
+    /** A picked image file: photo (any size), PNG or SVG. Null if it cannot be read. */
+    suspend fun fromFile(uri: Uri): ByteArray? = withContext(Dispatchers.IO) { runCatching { render(uri) }.getOrNull() }
 
     private fun favicon(host: String): ByteArray? {
         val url = "https://www.google.com/s2/favicons?domain=${URLEncoder.encode(host, "UTF-8")}&sz=${ImageCompressor.LOGO_SIZE}"
@@ -36,13 +36,14 @@ class LogoFetcher(private val web: WebImages) {
 
     private suspend fun siteLogo(host: String): ByteArray? {
         val page = "https://$host/"
-        val html = web.download(page)?.bytes?.toString(Charsets.UTF_8) ?: return null
-        return LogoCandidates.fromHtml(html, page).take(MAX_CANDIDATES)
+        val response = web.download(page) ?: return null
+        return LogoCandidates.fromHtml(response.bytes.toString(Charsets.UTF_8), response.url).take(MAX_CANDIDATES)
             .firstNotNullOfOrNull { url -> web.download(url)?.bytes?.let { render(it) } }
     }
 
-    private suspend fun render(bytes: ByteArray): ByteArray? {
-        val bitmap = web.draw(bytes, ImageCompressor.LOGO_SIZE) ?: return null
+    /** [data]: downloaded bytes or a picked file's Uri. */
+    private suspend fun render(data: Any): ByteArray? {
+        val bitmap = web.draw(data, ImageCompressor.LOGO_SIZE) ?: return null
         if (maxOf(bitmap.width, bitmap.height) < MIN_SIZE) return null
         return ImageCompressor.png(bitmap)
     }

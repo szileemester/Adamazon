@@ -37,7 +37,7 @@ fun UpdateScreen(onUpdate: () -> Unit) {
         try {
             context.startActivity(market)
         } catch (_: ActivityNotFoundException) {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$id")))
+            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$id"))) }
         }
     }
 

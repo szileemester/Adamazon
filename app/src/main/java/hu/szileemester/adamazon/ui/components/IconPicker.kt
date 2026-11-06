@@ -67,6 +67,7 @@ import hu.szileemester.adamazon.domain.GroupIcon
 import hu.szileemester.adamazon.domain.IconRef
 import hu.szileemester.adamazon.domain.Normalizer
 import hu.szileemester.adamazon.ui.appContainer
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /** Hand-picked shopping emoji, shown first. */
@@ -124,6 +125,7 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
     var linking by remember { mutableStateOf(false) }
     var linkFailed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var work by remember { mutableStateOf<Job?>(null) }
 
     fun pick(icon: String) {
         container.recentIcons.used(icon)
@@ -132,7 +134,7 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
 
     val photos = rememberPhotoPicker { uri: Uri ->
         making = true
-        scope.launch {
+        work = scope.launch {
             preview = runCatching { container.stickers.make(uri) }.getOrNull()
             making = false
         }
@@ -142,7 +144,7 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
     fun loadLink(link: String) {
         linking = false
         making = true
-        scope.launch {
+        work = scope.launch {
             val result = runCatching { container.stickers.fromLink(link) }.getOrNull()
             making = false
             if (result == null) linkFailed = true else preview = result
@@ -209,9 +211,16 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
     }
 
     if (making) {
+        // A slow site must not trap the user: Mégse stops waiting.
         AlertDialog(
             onDismissRequest = {},
             confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = {
+                    work?.cancel()
+                    making = false
+                }) { Text("Mégse") }
+            },
             title = { Text("Matrica készítése…") },
             text = { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } },
         )

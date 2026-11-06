@@ -22,6 +22,14 @@ class PageImageTest {
     }
 
     @Test
+    fun `addresses with spaces and accents still resolve`() {
+        assertEquals(
+            listOf("https://shop.hu/képek/tejföl doboz.jpg"),
+            PageImage.fromHtml("""<meta property="og:image" content="/képek/tejföl doboz.jpg">""", "https://shop.hu/hu/termek"),
+        )
+    }
+
+    @Test
     fun `without shared pictures the logo candidates remain`() {
         assertEquals(
             listOf("https://vallalat.kik.hu/Icons/kik-logo.svg"),

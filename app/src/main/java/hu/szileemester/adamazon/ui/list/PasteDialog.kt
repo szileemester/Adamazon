@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import hu.szileemester.adamazon.ui.components.ItemIcon
 
 /**
  * Confirms a multi-line paste or a dictated list: one row per line with the guessed icon and quantity. Lines already
@@ -54,7 +55,7 @@ fun PasteDialog(
                             enabled = preview.addable,
                             onCheckedChange = { selected[index] = it },
                         )
-                        Text(preview.emoji, fontSize = 20.sp, modifier = Modifier.width(32.dp))
+                        ItemIcon(preview.emoji, size = 24.dp, modifier = Modifier.width(32.dp))
                         Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
                             Text(preview.name, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             statusText(preview)?.let {

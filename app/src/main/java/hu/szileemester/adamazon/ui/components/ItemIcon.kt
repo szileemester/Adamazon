@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import hu.szileemester.adamazon.domain.GroupIcon
 import hu.szileemester.adamazon.domain.IconRef
 import androidx.compose.material3.Text
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /** The group's photo stickers, decoded once, by id. */
 val LocalIcons = staticCompositionLocalOf<Map<String, ImageBitmap>> { emptyMap() }
@@ -32,13 +34,24 @@ const val MISSING_ICON = "🛒"
 @Composable
 fun ProvideIcons(icons: Flow<List<GroupIcon>>, content: @Composable () -> Unit) {
     val list by icons.collectAsStateWithLifecycle(emptyList())
-    val bitmaps = remember(list) {
-        list.mapNotNull { icon ->
-            BitmapFactory.decodeByteArray(icon.image, 0, icon.image.size)?.let { icon.id to it.asImageBitmap() }
-        }.toMap()
+    val bitmaps by produceState(emptyMap<String, ImageBitmap>(), list) {
+        value = withContext(Dispatchers.Default) { list.mapNotNull { icon -> decodeSticker(icon.image)?.let { icon.id to it } }.toMap() }
     }
     CompositionLocalProvider(LocalIcons provides bitmaps, content = content)
 }
+
+/**
+ * A sticker's picture, or null for one that is not a sane small image: the rules cap the bytes,
+ * not the pixels, and one huge picture would otherwise crash every member's app on start.
+ */
+private fun decodeSticker(bytes: ByteArray): ImageBitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || maxOf(bounds.outWidth, bounds.outHeight) > MAX_STICKER_SIDE) return null
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+}
+
+private const val MAX_STICKER_SIDE = 512
 
 /** An item or category icon: an emoji, or a photo sticker (see [IconRef]) drawn at the same size. */
 @Composable

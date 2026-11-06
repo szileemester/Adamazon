@@ -27,8 +27,16 @@ class AppUpdates(context: Context) {
     private val _required = MutableStateFlow(false)
     val required: StateFlow<Boolean> = _required.asStateFlow()
 
-    /** Asks Play for a newer version; true if one must be installed now. */
+    private var lastCheck = 0L
+
+    /**
+     * Asks Play for a newer version; true if one must be installed now. Asked again at most every
+     * [RECHECK_MS]: coming back from the camera or a file picker must not throw away an open edit.
+     */
     suspend fun check(): Boolean {
+        val now = System.currentTimeMillis()
+        if (!_required.value && now - lastCheck < RECHECK_MS) return false
+        lastCheck = now
         val latest = runCatching { manager.appUpdateInfo.await() }.getOrNull()
         info = latest
         val availability = latest?.updateAvailability()
@@ -46,5 +54,9 @@ class AppUpdates(context: Context) {
         return runCatching {
             manager.startUpdateFlowForResult(latest, launcher, AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build())
         }.getOrDefault(false)
+    }
+
+    private companion object {
+        const val RECHECK_MS = 30 * 60 * 1000L
     }
 }
