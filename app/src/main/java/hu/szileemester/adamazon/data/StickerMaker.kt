@@ -36,10 +36,31 @@ class StickerResult(val cutOut: Sticker?, val round: Sticker, val modelMissing: 
  * the device (ML Kit subject segmentation, no network), outlined in white and given a soft shadow,
  * like the stickers of messaging apps. Without a recognisable product it falls back to a round crop.
  */
-class StickerMaker(private val images: ImageCompressor) {
+class StickerMaker(private val images: ImageCompressor, private val web: WebImages) {
 
-    suspend fun make(uri: Uri): StickerResult {
-        val photo = withContext(Dispatchers.Default) { images.decode(uri, maxSide = 1024) }
+    suspend fun make(uri: Uri): StickerResult =
+        make(withContext(Dispatchers.Default) { images.decode(uri, maxSide = PHOTO_SIZE) })
+
+    /**
+     * From an image or product-page link; null if no image was found there. A picture that is
+     * already cut out (a logo PNG or SVG with a transparent background) only gets the outline.
+     */
+    suspend fun fromLink(link: String): StickerResult? {
+        val bytes = web.fromLink(link) ?: return null
+        val picture = web.draw(bytes, PHOTO_SIZE) ?: return null
+        if (!hasTransparentBackground(picture)) return make(picture)
+        return withContext(Dispatchers.Default) {
+            val cutOut = trimmed(picture)?.let { Sticker(encode(outlined(it)), cutOut = true) }
+            StickerResult(cutOut, Sticker(encode(roundCrop(picture)), cutOut = false), modelMissing = false)
+        }
+    }
+
+    /** A clear corner means the background is already gone. */
+    private fun hasTransparentBackground(bitmap: Bitmap): Boolean =
+        bitmap.hasAlpha() && listOf(0 to 0, bitmap.width - 1 to 0, 0 to bitmap.height - 1, bitmap.width - 1 to bitmap.height - 1)
+            .count { (x, y) -> Color.alpha(bitmap.getPixel(x, y)) < ALPHA_THRESHOLD } >= 2
+
+    private suspend fun make(photo: Bitmap): StickerResult {
         val segmented = runCatching { segment(photo) }
         val modelMissing = (segmented.exceptionOrNull() as? MlKitException)?.errorCode == MlKitException.UNAVAILABLE
         return withContext(Dispatchers.Default) {
@@ -129,6 +150,7 @@ class StickerMaker(private val images: ImageCompressor) {
 
     private companion object {
         const val SIZE = 128
+        const val PHOTO_SIZE = 1024
         const val OUTLINE = 5
         const val MARGIN = 4
         const val ALPHA_THRESHOLD = 40

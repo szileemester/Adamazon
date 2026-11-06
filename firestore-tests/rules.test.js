@@ -170,6 +170,8 @@ describe("every write the app makes is accepted", () => {
   it("items", async () => {
     const db = anna();
     await assertSucceeds(setDoc(doc(db, "groups/g1/stores/s1/items/i2"), item({ quantity: null, createdBy: null })));
+    await assertSucceeds(updateDoc(doc(db, "groups/g1/stores/s1/items/i2"), { note: "Csak a zsírszegény! https://auchan.hu/tej" }));
+    await assertSucceeds(updateDoc(doc(db, "groups/g1/stores/s1/items/i2"), { note: null }));
     await assertSucceeds(updateDoc(doc(db, "groups/g1/stores/s1/items/i1"), { checked: true, checkedAt: 1761900000001 }));
     await assertSucceeds(updateDoc(doc(db, "groups/g1/stores/s1/items/i1"), { checked: false, checkedAt: null, quantity: "3 kg", createdAt: 2 }));
     await assertSucceeds(setDoc(doc(db, "groups/g1/stores/s1/items/i1"), item({ name: "https://my.linistry.com/" + "a".repeat(200) })));
@@ -206,6 +208,12 @@ describe("every write the app makes is accepted", () => {
 describe("bad data is rejected", () => {
   it("store description over 255 characters", async () => {
     await assertFails(updateDoc(doc(anna(), "groups/g1/stores/s1"), { description: "x".repeat(256) }));
+  });
+
+  it("item note over 100 characters", async () => {
+    await assertSucceeds(updateDoc(doc(anna(), "groups/g1/stores/s1/items/i1"), { note: "x".repeat(100) }));
+    await assertFails(updateDoc(doc(anna(), "groups/g1/stores/s1/items/i1"), { note: "x".repeat(101) }));
+    await assertFails(updateDoc(doc(anna(), "groups/g1/stores/s1/items/i1"), { note: 5 }));
   });
 
   it("empty or missing names", async () => {

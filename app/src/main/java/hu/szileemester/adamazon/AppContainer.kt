@@ -13,6 +13,7 @@ import hu.szileemester.adamazon.data.StickerMaker
 import hu.szileemester.adamazon.data.LogoFetcher
 import hu.szileemester.adamazon.data.StorePresets
 import hu.szileemester.adamazon.data.ThemeSettings
+import hu.szileemester.adamazon.data.WebImages
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.DictionaryParser
 import hu.szileemester.adamazon.domain.EmojiCatalog
@@ -43,9 +44,10 @@ class AppContainer(app: Application) {
     val theme = ThemeSettings(app)
     val help = HelpSettings(app)
     val images = ImageCompressor(app.contentResolver)
-    val logos = LogoFetcher(app)
+    val web = WebImages(app)
+    val logos = LogoFetcher(web)
     val barcodes = BarcodeReader(app)
-    val stickers = StickerMaker(images)
+    val stickers = StickerMaker(images, web)
     val recentIcons = RecentIcons(app)
 
     val categorizer: Categorizer by lazy {

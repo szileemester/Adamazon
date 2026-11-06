@@ -1,6 +1,12 @@
 package hu.szileemester.adamazon.ui.list
 
 import androidx.compose.foundation.layout.Box
+import hu.szileemester.adamazon.domain.Links
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -77,6 +83,7 @@ fun ItemEditSheet(
     var unit by remember { mutableStateOf(parsedQuantity?.unit ?: if (item.quantity == null) "db" else "") }
     var categoryId by remember { mutableStateOf(item.categoryId) }
     var emoji by remember { mutableStateOf(item.emoji) }
+    var note by remember { mutableStateOf(item.note.orEmpty()) }
     var targetStoreId by remember { mutableStateOf(currentStore?.id.orEmpty()) }
     var pickingEmoji by remember { mutableStateOf(false) }
     var pickingCategory by remember { mutableStateOf(false) }
@@ -124,6 +131,8 @@ fun ItemEditSheet(
                 onAmountChange = { amount = it },
                 onUnitChange = { unit = it },
             )
+            Spacer(Modifier.height(16.dp))
+            NoteField(note, onNoteChange = { note = it })
             if (currentStore != null && otherStores.isNotEmpty()) {
                 Spacer(Modifier.height(16.dp))
                 Text("Bolt", style = MaterialTheme.typography.labelLarge)
@@ -156,6 +165,7 @@ fun ItemEditSheet(
                             item.copy(
                                 name = Normalizer.clean(name),
                                 quantity = quantityText(),
+                                note = Item.cleanNote(note),
                                 categoryId = categoryId,
                                 emoji = emoji,
                             ),
@@ -255,11 +265,11 @@ private fun QuantityEditor(
 private fun StorePicker(stores: List<Store>, selectedId: String, onSelect: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val selected = stores.firstOrNull { it.id == selectedId } ?: stores.first()
-    Box {
-        OutlinedButton(onClick = { open = true }) {
+    Box(Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
             StoreLogo(selected, size = 24.dp)
             Spacer(Modifier.width(8.dp))
-            Text(selected.name)
+            Text(selected.name, modifier = Modifier.weight(1f))
             Icon(Icons.Default.ArrowDropDown, contentDescription = "Bolt választása")
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -268,6 +278,34 @@ private fun StorePicker(stores: List<Store>, selectedId: String, onSelect: (Stri
                     leadingIcon = { StoreLogo(store, size = 24.dp) },
                     text = { Text(store.name) },
                     onClick = { onSelect(store.id); open = false },
+                )
+            }
+        }
+    }
+}
+
+/** Optional note (max [Item.NOTE_MAX] chars); its web links open in the browser from the chips below. */
+@Composable
+private fun NoteField(note: String, onNoteChange: (String) -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    val links = remember(note) { Links.find(note) }
+    OutlinedTextField(
+        value = note,
+        onValueChange = { onNoteChange(it.take(Item.NOTE_MAX)) },
+        label = { Text("Megjegyzés (nem kötelező)") },
+        placeholder = { Text("pl. a zsírszegényt, vagy egy link a termékhez") },
+        supportingText = { Text("${note.length} / ${Item.NOTE_MAX}") },
+        maxLines = 3,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    if (links.isNotEmpty()) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            links.forEach { link ->
+                AssistChip(
+                    onClick = { runCatching { uriHandler.openUri(link.url) } },
+                    label = { Text(link.url.substringAfter("://").removePrefix("www.").substringBefore('/'), maxLines = 1) },
+                    leadingIcon = { Icon(Icons.Default.Link, contentDescription = null, Modifier.size(18.dp)) },
                 )
             }
         }

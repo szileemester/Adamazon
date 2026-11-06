@@ -48,6 +48,8 @@ data class Item(
     val id: String,
     val name: String,
     val quantity: String? = null,
+    /** Optional short note (brand, a link to the product…), at most [Item.NOTE_MAX] chars. */
+    val note: String? = null,
     val categoryId: String,
     val emoji: String,
     val checked: Boolean = false,
@@ -56,6 +58,13 @@ data class Item(
     val createdBy: String? = null,
 ) {
     val key: String get() = Normalizer.key(name)
+
+    companion object {
+        const val NOTE_MAX = 100
+
+        /** Trims and caps a typed note; blank means "no note". */
+        fun cleanNote(text: String): String? = text.trim().take(NOTE_MAX).ifBlank { null }
+    }
 }
 
 data class LoyaltyCard(

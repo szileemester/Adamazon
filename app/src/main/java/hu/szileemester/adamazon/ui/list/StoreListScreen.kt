@@ -515,6 +515,8 @@ private fun ItemRow(item: Item, onToggle: () -> Unit, onClick: () -> Unit) {
             color = if (item.checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
+        // The note itself is read in the editor; here a mark only says there is one.
+        if (item.note != null) Text("📝", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(end = 6.dp))
         item.quantity?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

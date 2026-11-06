@@ -82,10 +82,11 @@ service cloud.firestore {
     }
 
     function validItem(d) {
-      return d.keys().hasOnly(['name', 'quantity', 'categoryId', 'emoji', 'checked', 'checkedAt',
+      return d.keys().hasOnly(['name', 'quantity', 'note', 'categoryId', 'emoji', 'checked', 'checkedAt',
                                'createdAt', 'createdBy']) &&
         str(d, 'name', 1, 500) &&
         optStr(d, 'quantity', 50) &&
+        optStr(d, 'note', 100) &&
         str(d, 'categoryId', 0, 100) &&
         str(d, 'emoji', 0, 32) &&
         d.checked is bool &&

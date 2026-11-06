@@ -48,6 +48,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import hu.szileemester.adamazon.domain.Links
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -117,6 +121,8 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
     var making by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf<StickerResult?>(null) }
     var deleting by remember { mutableStateOf<GroupIcon?>(null) }
+    var linking by remember { mutableStateOf(false) }
+    var linkFailed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun pick(icon: String) {
@@ -129,6 +135,17 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
         scope.launch {
             preview = runCatching { container.stickers.make(uri) }.getOrNull()
             making = false
+        }
+    }
+    val sources = StickerSources(photos.fromCamera, photos.fromGallery, fromLink = { linking = true })
+
+    fun loadLink(link: String) {
+        linking = false
+        making = true
+        scope.launch {
+            val result = runCatching { container.stickers.fromLink(link) }.getOrNull()
+            making = false
+            if (result == null) linkFailed = true else preview = result
         }
     }
 
@@ -164,11 +181,11 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
                         items(hits, key = { "q-" + it.emoji }) { EmojiCell(it.emoji, ::pick) }
                         if (ownHits.isEmpty() && hits.isEmpty()) {
                             header("Nincs találat. Próbáld más szóval, vagy készíts ikont fotóból:")
-                            photoTiles(photos)
+                            stickerSources(sources)
                         }
                     } else {
                         header("Saját képek")
-                        photoTiles(photos)
+                        stickerSources(sources)
                         items(stickers, key = { "s-" + it.id }) { StickerCell(it, bitmaps, ::pick) { deleting = it } }
                         // A deleted sticker is dropped from the recent ones, not shown as 🛒.
                         val recentAlive = recent.filter { icon -> IconRef.imageId(icon)?.let { id -> stickers.any { it.id == id } } ?: true }
@@ -214,6 +231,17 @@ fun IconPicker(current: String, suggestedName: String = "", onDismiss: () -> Uni
         )
     }
 
+    if (linking) LinkDialog(onDismiss = { linking = false }, onLoad = ::loadLink)
+
+    if (linkFailed) {
+        AlertDialog(
+            onDismissRequest = { linkFailed = false },
+            title = { Text("Nincs kép") },
+            text = { Text("Ezen a linken nem találtam képet. Próbáld a kép saját linkjével (hosszan nyomva a képen: „Kép címének másolása”).") },
+            confirmButton = { TextButton(onClick = { linkFailed = false }) { Text("OK") } },
+        )
+    }
+
     deleting?.let { icon ->
         ConfirmDialog(
             title = "„${icon.name}” törlése?",
@@ -236,9 +264,18 @@ private fun LazyGridScope.header(title: String) {
     }
 }
 
-private fun LazyGridScope.photoTiles(photos: PhotoPicker) {
-    item(key = "camera") { ActionCell(Icons.Default.PhotoCamera, "Fotó", photos.fromCamera) }
-    item(key = "gallery") { ActionCell(Icons.Default.Image, "Galéria", photos.fromGallery) }
+/** Where a new sticker can come from. */
+private class StickerSources(val fromCamera: () -> Unit, val fromGallery: () -> Unit, val fromLink: () -> Unit)
+
+/** Fotó · Galéria · Link, side by side across the whole row. */
+private fun LazyGridScope.stickerSources(sources: StickerSources) {
+    item(key = "sources", span = { GridItemSpan(maxLineSpan) }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            ActionCell(Icons.Default.PhotoCamera, "Fotó", sources.fromCamera, Modifier.weight(1f))
+            ActionCell(Icons.Default.Image, "Galéria", sources.fromGallery, Modifier.weight(1f))
+            ActionCell(Icons.Default.Link, "Link", sources.fromLink, Modifier.weight(1f))
+        }
+    }
 }
 
 @Composable
@@ -269,10 +306,10 @@ private fun StickerCell(
 }
 
 @Composable
-private fun ActionCell(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+private fun ActionCell(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
     Column(
-        Modifier
-            .size(52.dp)
+        modifier
+            .height(56.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.secondaryContainer)
             .combinedClickable(onClick = onClick),
@@ -342,6 +379,39 @@ private fun StickerPreviewDialog(
         confirmButton = {
             TextButton(enabled = name.isNotBlank(), onClick = { onSave(Normalizer.clean(name), sticker) }) { Text("Mentés") }
         },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },
+    )
+}
+
+/** Asks for an image or product-page link; a link on the clipboard is filled in. */
+@Composable
+private fun LinkDialog(onDismiss: () -> Unit, onLoad: (String) -> Unit) {
+    val clipboard = LocalClipboardManager.current
+    var link by remember {
+        mutableStateOf(clipboard.getText()?.text?.let { Links.find(it).firstOrNull()?.url }.orEmpty())
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Ikon linkből") },
+        text = {
+            Column {
+                Text(
+                    "Egy kép linkje, vagy egy webshop termékoldala (onnan a termék képét veszem).",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = link,
+                    onValueChange = { link = it.trim() },
+                    label = { Text("Link") },
+                    placeholder = { Text("https://…") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = { TextButton(enabled = link.contains('.'), onClick = { onLoad(link) }) { Text("Betöltés") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Mégse") } },
     )
 }

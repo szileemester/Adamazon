@@ -57,6 +57,7 @@ fun DocumentSnapshot.toItem() = Item(
     id = id,
     name = getString("name").orEmpty(),
     quantity = getString("quantity"),
+    note = getString("note"),
     categoryId = getString("categoryId").orEmpty(),
     emoji = getString("emoji").orEmpty(),
     checked = getBoolean("checked") ?: false,
@@ -68,6 +69,7 @@ fun DocumentSnapshot.toItem() = Item(
 fun Item.toMap(): Map<String, Any?> = mapOf(
     "name" to name,
     "quantity" to quantity,
+    "note" to note,
     "categoryId" to categoryId,
     "emoji" to emoji,
     "checked" to checked,
