@@ -45,6 +45,7 @@ import hu.szileemester.adamazon.data.StorePreset
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
+import hu.szileemester.adamazon.ui.components.ItemIcon
 import hu.szileemester.adamazon.ui.components.StoreLogo
 import hu.szileemester.adamazon.ui.theme.storeContainerColor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -170,12 +171,11 @@ private fun StoreCard(summary: StoreSummary, onClick: () -> Unit, modifier: Modi
             if (summary.openItems.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 summary.openItems.take(PREVIEW_COUNT).forEach { item ->
-                    Text(
-                        "${item.emoji} ${item.name}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ItemIcon(item.emoji, size = 18.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(item.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
                 val more = summary.openItems.size - PREVIEW_COUNT
                 if (more > 0) {

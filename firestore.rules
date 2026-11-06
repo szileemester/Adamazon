@@ -59,7 +59,7 @@ service cloud.firestore {
 
     function validCategory(d) {
       return d.keys().hasOnly(['name', 'emoji', 'sortIndex']) &&
-        str(d, 'name', 1, 50) && str(d, 'emoji', 0, 16) && d.sortIndex is int;
+        str(d, 'name', 1, 50) && str(d, 'emoji', 0, 32) && d.sortIndex is int;
     }
 
     function validStore(d) {
@@ -87,7 +87,7 @@ service cloud.firestore {
         str(d, 'name', 1, 500) &&
         optStr(d, 'quantity', 50) &&
         str(d, 'categoryId', 0, 100) &&
-        str(d, 'emoji', 0, 16) &&
+        str(d, 'emoji', 0, 32) &&
         d.checked is bool &&
         optInt(d, 'checkedAt') && optInt(d, 'createdAt') &&
         optStr(d, 'createdBy', 200);
@@ -95,7 +95,7 @@ service cloud.firestore {
 
     function validLearned(d) {
       return d.keys().hasOnly(['displayName', 'categoryId', 'emoji']) &&
-        str(d, 'displayName', 1, 500) && str(d, 'categoryId', 0, 100) && str(d, 'emoji', 0, 16);
+        str(d, 'displayName', 1, 500) && str(d, 'categoryId', 0, 100) && str(d, 'emoji', 0, 32);
     }
 
     function validCard(d) {
@@ -110,6 +110,12 @@ service cloud.firestore {
 
     function validCardImage(d) {
       return d.keys().hasOnly(['data']) && d.data is bytes && d.data.size() <= 950 * 1024;
+    }
+
+    // A photo sticker in the group's icon library, referenced from emoji fields as "img:{id}".
+    function validIcon(d) {
+      return d.keys().hasOnly(['name', 'image', 'createdAt']) &&
+        str(d, 'name', 1, 50) && d.image is bytes && d.image.size() <= 40 * 1024 && optInt(d, 'createdAt');
     }
 
     // --- access ---
@@ -149,6 +155,11 @@ service cloud.firestore {
       match /learned/{id} {
         allow read, delete: if inGroup(g);
         allow create, update: if inGroup(g) && validLearned(request.resource.data);
+      }
+
+      match /icons/{id} {
+        allow read, delete: if inGroup(g);
+        allow create, update: if inGroup(g) && validIcon(request.resource.data);
       }
 
       match /cards/{cardId} {

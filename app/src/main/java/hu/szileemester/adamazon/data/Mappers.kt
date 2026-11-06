@@ -4,6 +4,7 @@ import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.DocumentSnapshot
 import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.Category
+import hu.szileemester.adamazon.domain.GroupIcon
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.LearnedMapping
 import hu.szileemester.adamazon.domain.LoyaltyCard
@@ -90,6 +91,13 @@ fun DocumentSnapshot.toCard() = LoyaltyCard(
     barcode = getString("barcodeValue")?.let { value ->
         getString("barcodeFormat")?.let { format -> CardBarcode(value, format) }
     },
+)
+
+fun DocumentSnapshot.toIcon() = GroupIcon(
+    id = id,
+    name = getString("name").orEmpty(),
+    image = getBlob("image")?.toBytes() ?: ByteArray(0),
+    createdAt = getLong("createdAt") ?: 0,
 )
 
 fun ByteArray.toBlob(): Blob = Blob.fromBytes(this)

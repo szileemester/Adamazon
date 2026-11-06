@@ -1,10 +1,6 @@
 package hu.szileemester.adamazon.ui.cards
 
-import android.content.Context
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,9 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -62,8 +56,8 @@ import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.LoyaltyCard
 import hu.szileemester.adamazon.domain.Store
 import hu.szileemester.adamazon.ui.appViewModel
+import hu.szileemester.adamazon.ui.components.rememberPhotoPicker
 import hu.szileemester.adamazon.ui.components.ConfirmDialog
-import java.io.File
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -102,7 +96,6 @@ class CardEditViewModel(private val c: AppContainer, private val cardId: String?
 fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
     val vm = appViewModel(key = "card-edit-${cardId ?: "new"}") { CardEditViewModel(it, cardId) }
     val stores by vm.stores.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf(cardId == null) }
@@ -169,7 +162,7 @@ fun CardEditScreen(cardId: String?, back: () -> Unit, deleted: () -> Unit) {
         ) {
             OutlinedTextField(name, { name = it }, label = { Text("Név, pl. Auchan kártya") }, singleLine = true, modifier = Modifier.fillMaxWidth())
             StorePicker(stores, storeId) { storeId = it }
-            ImageSlot(image, context, onPicked = ::picked)
+            ImageSlot(image, onPicked = ::picked)
             BarcodeStatus(image)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             if (cardId != null) {
@@ -237,14 +230,8 @@ private fun StorePicker(stores: List<Store>, selectedId: String?, onSelect: (Str
 }
 
 @Composable
-private fun ImageSlot(image: CardImage, context: Context, onPicked: (Uri) -> Unit) {
-    var cameraUri by remember { mutableStateOf<Uri?>(null) }
-    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let(onPicked)
-    }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (ok) cameraUri?.let(onPicked)
-    }
+private fun ImageSlot(image: CardImage, onPicked: (Uri) -> Unit) {
+    val picker = rememberPhotoPicker(onPicked)
 
     Column {
         Text("Kártya képe", style = MaterialTheme.typography.labelLarge)
@@ -264,27 +251,16 @@ private fun ImageSlot(image: CardImage, context: Context, onPicked: (Uri) -> Uni
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
+            TextButton(onClick = picker.fromGallery) {
                 Icon(Icons.Default.Image, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text("Galéria")
             }
-            TextButton(onClick = {
-                val uri = newCameraUri(context)
-                cameraUri = uri
-                camera.launch(uri)
-            }) {
+            TextButton(onClick = picker.fromCamera) {
                 Icon(Icons.Default.PhotoCamera, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text("Fénykép")
             }
         }
     }
-}
-
-/** The system camera app writes the photo here; no camera permission is needed. */
-private fun newCameraUri(context: Context): Uri {
-    val dir = File(context.cacheDir, "camera").apply { mkdirs() }
-    val file = File(dir, "card_${System.currentTimeMillis()}.jpg")
-    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }

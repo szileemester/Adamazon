@@ -2,6 +2,7 @@ package hu.szileemester.adamazon.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +11,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -26,9 +29,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -37,6 +40,8 @@ import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.CategoryDialog
+import hu.szileemester.adamazon.ui.components.ConfirmDialog
+import hu.szileemester.adamazon.ui.components.ItemIcon
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import sh.calvin.reorderable.ReorderableItem
@@ -61,6 +66,7 @@ fun CategoriesScreen(back: () -> Unit) {
     val vm = appViewModel { CategoriesViewModel(it) }
     val categories by vm.categories.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Category?>(null) }
+    var deleting by remember { mutableStateOf<Category?>(null) }
 
     var order by remember { mutableStateOf(categories) }
     LaunchedEffect(categories) { order = categories }
@@ -97,7 +103,7 @@ fun CategoriesScreen(back: () -> Unit) {
             item(key = "intro") {
                 Text(
                     "Ez az alapsorrend az új üzleteknél. Üzletenként külön is beállítható, és magától tanul. " +
-                        "Húzd a ≡ jelet az átrendezéshez, koppints a szerkesztéshez.",
+                        "A ✏️ a nevet és az ikont szerkeszti, a ≡ jelet húzva átrendezheted.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
@@ -107,13 +113,22 @@ fun CategoriesScreen(back: () -> Unit) {
                 ReorderableItem(reorderState, key = category.id) { dragging ->
                     ListItem(
                         headlineContent = { Text(category.name) },
-                        leadingContent = { Text(category.emoji, fontSize = 22.sp) },
+                        leadingContent = { ItemIcon(category.emoji, size = 28.dp) },
                         trailingContent = {
-                            Icon(
-                                Icons.Default.DragHandle,
-                                contentDescription = "Áthelyezés",
-                                modifier = Modifier.draggableHandle(onDragStopped = { vm.reorder(order.map { it.id }) }),
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { editing = category }) { Icon(Icons.Default.Edit, contentDescription = "Szerkesztés") }
+                                // "Egyéb" collects the items of deleted categories, so it stays.
+                                if (category.id != Categorizer.FALLBACK_CATEGORY_ID) {
+                                    IconButton(onClick = { deleting = category }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Törlés", tint = MaterialTheme.colorScheme.error)
+                                    }
+                                }
+                                Icon(
+                                    Icons.Default.DragHandle,
+                                    contentDescription = "Áthelyezés",
+                                    modifier = Modifier.padding(start = 4.dp).draggableHandle(onDragStopped = { vm.reorder(order.map { it.id }) }),
+                                )
+                            }
                         },
                         tonalElevation = if (dragging) 4.dp else 0.dp,
                         modifier = Modifier.clickable { editing = category },
@@ -121,6 +136,16 @@ fun CategoriesScreen(back: () -> Unit) {
                 }
             }
         }
+    }
+
+    deleting?.let { category ->
+        ConfirmDialog(
+            title = "„${category.name}” törlése?",
+            text = "Az ide tartozó tételek az „Egyéb” kategóriába kerülnek.",
+            confirmLabel = "Törlés",
+            onDismiss = { deleting = null },
+            onConfirm = { vm.delete(category) },
+        )
     }
 
     editing?.let { category ->

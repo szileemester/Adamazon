@@ -25,6 +25,7 @@ class GroupSession(db: FirebaseFirestore, val groupId: String) {
     val items = ItemRepository(db, group)
     val learned = LearnedRepository(group)
     val cards = CardRepository(db, group)
+    val icons = IconRepository(group)
     val migration = LegacyMigration(db, group)
 
     /** The group's members, from their allow-list entries (readable within the group). */

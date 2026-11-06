@@ -8,11 +8,15 @@ import hu.szileemester.adamazon.data.BarcodeReader
 import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.data.HelpSettings
 import hu.szileemester.adamazon.data.ImageCompressor
+import hu.szileemester.adamazon.data.RecentIcons
+import hu.szileemester.adamazon.data.StickerMaker
 import hu.szileemester.adamazon.data.LogoFetcher
 import hu.szileemester.adamazon.data.StorePresets
 import hu.szileemester.adamazon.data.ThemeSettings
 import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.DictionaryParser
+import hu.szileemester.adamazon.domain.EmojiCatalog
+import android.graphics.Paint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,9 +45,18 @@ class AppContainer(app: Application) {
     val images = ImageCompressor(app.contentResolver)
     val logos = LogoFetcher()
     val barcodes = BarcodeReader(app)
+    val stickers = StickerMaker(images)
+    val recentIcons = RecentIcons(app)
 
     val categorizer: Categorizer by lazy {
         Categorizer(DictionaryParser.parse(app.assets.open("dictionary.json").bufferedReader().use { it.readText() }))
     }
     val presets by lazy { StorePresets.load(app) }
+
+    /** Every emoji this device's font can draw (minSdk 26 phones lack the newest ones). */
+    val emojis: EmojiCatalog by lazy {
+        val catalog = EmojiCatalog.parse(app.assets.open("emoji_hu.json").bufferedReader().use { it.readText() })
+        val paint = Paint()
+        EmojiCatalog(catalog.entries.filter { paint.hasGlyph(it.emoji) })
+    }
 }

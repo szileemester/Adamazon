@@ -62,8 +62,9 @@ private val pages = listOf(
     ),
     HelpPage(
         "🏷️", "Kategóriák és ikonok",
-        "Minden tétel magától kategóriát és ikont kap. Ha kijavítod, megjegyzi. A kategóriák sorrendjét " +
-            "boltonként a pipálásaidból tanulja meg, így a lista a bolt bejárási sorrendjét követi.",
+        "Minden tétel magától kategóriát és ikont kap. Ha kijavítod, megjegyzi. Az ikonok között szóval " +
+            "kereshetsz, vagy fotóból saját ikont készíthetsz (pl. a kedvenc tejfölöd dobozáról). A kategória " +
+            "fejlécét hosszan nyomva szerkesztheted vagy törölheted. A sorrendet boltonként a pipálásaidból tanulja meg.",
     ),
     HelpPage(
         "✅", "Pipálás és szerkesztés",

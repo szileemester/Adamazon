@@ -247,6 +247,10 @@ class StoreListViewModel(private val c: AppContainer, private val storeId: Strin
     fun createCategory(name: String, emoji: String): String =
         c.session.categories.add(name, emoji, state.value.categories)
 
+    fun updateCategory(category: Category) = c.session.categories.update(category)
+
+    fun deleteCategory(category: Category) = c.session.categories.delete(category.id)
+
     /**
      * Saves an edited item, moving it to [targetStoreId] when that differs from this store.
      * A changed category or icon is remembered for next time.

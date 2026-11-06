@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.reorderable)
     implementation(libs.mlkit.barcode)
+    implementation(libs.mlkit.subject.segmentation)
     implementation(libs.zxing.core)
 
     testImplementation(libs.junit)

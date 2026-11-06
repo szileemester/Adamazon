@@ -190,6 +190,17 @@ describe("every write the app makes is accepted", () => {
     await assertSucceeds(deleteDoc(doc(db, "groups/g1/cards/c2/images/back")));
     await assertSucceeds(deleteDoc(doc(db, "groups/g1/cards/c2")));
   });
+
+  it("photo icons and references to them", async () => {
+    const db = anna();
+    const ref = "img:" + "a".repeat(20);
+    await assertSucceeds(setDoc(doc(db, "groups/g1/icons/i1"), { name: "Tejföl", image: bytes(15_000), createdAt: 1 }));
+    await assertSucceeds(getDocs(collection(db, "groups/g1/icons")));
+    await assertSucceeds(setDoc(doc(db, "groups/g1/stores/s1/items/i2"), item({ emoji: ref })));
+    await assertSucceeds(setDoc(doc(db, "groups/g1/learned/tejfol"), { displayName: "Tejföl", categoryId: "tejtermek", emoji: ref }));
+    await assertSucceeds(setDoc(doc(db, "groups/g1/categories/k1"), { name: "Kóla", emoji: ref, sortIndex: 13 }));
+    await assertSucceeds(deleteDoc(doc(db, "groups/g1/icons/i1")));
+  });
 });
 
 describe("bad data is rejected", () => {
@@ -222,6 +233,16 @@ describe("bad data is rejected", () => {
     const db = anna();
     await assertFails(updateDoc(doc(db, "groups/g1/stores/s1/items/i1"), { checked: "yes" }));
     await assertFails(updateDoc(doc(db, "groups/g1/stores/s1"), { sortIndex: "first" }));
+  });
+
+  it("bad photo icons and over-long icon references", async () => {
+    const db = anna();
+    await assertFails(setDoc(doc(db, "groups/g1/icons/i1"), { name: "Nagy", image: bytes(41 * 1024) }));
+    await assertFails(setDoc(doc(db, "groups/g1/icons/i1"), { name: "", image: bytes(100) }));
+    await assertFails(setDoc(doc(db, "groups/g1/icons/i1"), { name: "Szöveg", image: "nem kép" }));
+    await assertFails(getDocs(collection(cili(), "groups/g1/icons")));
+    await assertFails(setDoc(doc(cili(), "groups/g1/icons/i9"), { name: "Idegen", image: bytes(100) }));
+    await assertFails(setDoc(doc(db, "groups/g1/stores/s1/items/i2"), item({ emoji: "x".repeat(33) })));
   });
 
   it("oversized images", async () => {

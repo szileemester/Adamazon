@@ -11,7 +11,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,7 +87,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -97,12 +98,16 @@ import hu.szileemester.adamazon.domain.suggestions
 import hu.szileemester.adamazon.ui.appViewModel
 import hu.szileemester.adamazon.ui.components.StoreDescriptionDialog
 import hu.szileemester.adamazon.ui.components.StoreLogo
+import hu.szileemester.adamazon.ui.components.CategoryDialog
+import hu.szileemester.adamazon.ui.components.ItemIcon
+import hu.szileemester.adamazon.domain.Categorizer
+import hu.szileemester.adamazon.domain.Category
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import hu.szileemester.adamazon.ui.theme.storeContainerColor
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun StoreListScreen(
     storeId: String,
@@ -117,6 +122,7 @@ fun StoreListScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Item?>(null) }
+    var editingCategory by remember { mutableStateOf<Category?>(null) }
     var input by rememberSaveable { mutableStateOf("") }
     var checkedExpanded by rememberSaveable { mutableStateOf(false) }
     var showingDescription by rememberSaveable { mutableStateOf(false) }
@@ -282,13 +288,24 @@ fun StoreListScreen(
             }
             state.sections.forEach { section ->
                 item(key = "header-${section.category.id}") {
-                    Text(
-                        "${section.category.emoji}  ${section.category.name}",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.animateItem().padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
-                    )
+                    // A long press edits the category (name, icon, delete) right from the list.
+                    Row(
+                        Modifier
+                            .animateItem()
+                            .fillMaxWidth()
+                            .combinedClickable(onClick = {}, onLongClick = { editingCategory = section.category })
+                            .padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ItemIcon(section.category.emoji, size = 20.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            section.category.name,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
                 items(section.items, key = { it.id }) { item ->
                     SwipeToDelete(onDelete = { vm.delete(item) }, modifier = Modifier.animateItem()) {
@@ -352,6 +369,8 @@ fun StoreListScreen(
             categories = state.categories,
             onDismiss = { editing = null },
             onCreateCategory = vm::createCategory,
+            onUpdateCategory = vm::updateCategory,
+            onDeleteCategory = vm::deleteCategory,
             currentStore = store,
             otherStores = otherStores,
             onSave = { edited, targetStoreId ->
@@ -362,6 +381,24 @@ fun StoreListScreen(
                 vm.delete(item)
                 editing = null
             },
+        )
+    }
+
+    editingCategory?.let { category ->
+        CategoryDialog(
+            category = category,
+            existing = state.categories,
+            onDismiss = { editingCategory = null },
+            onSave = {
+                vm.updateCategory(it)
+                editingCategory = null
+            },
+            onDelete = if (category.id != Categorizer.FALLBACK_CATEGORY_ID) {
+                {
+                    vm.deleteCategory(category)
+                    editingCategory = null
+                }
+            } else null,
         )
     }
 }
@@ -469,7 +506,8 @@ private fun ItemRow(item: Item, onToggle: () -> Unit, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
-        Text(item.emoji, fontSize = 22.sp, modifier = Modifier.width(36.dp))
+        ItemIcon(item.emoji, size = 26.dp)
+        Spacer(Modifier.width(10.dp))
         Text(
             item.name,
             style = MaterialTheme.typography.bodyLarge,

@@ -1,6 +1,7 @@
 package hu.szileemester.adamazon.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Normalizer
 
@@ -42,6 +42,7 @@ fun CategoryDialog(
     var name by remember { mutableStateOf(category.name) }
     var emoji by remember { mutableStateOf(category.emoji) }
     var picking by remember { mutableStateOf(false) }
+    var confirmingDelete by remember { mutableStateOf(false) }
     val duplicate = existing.any { it.id != category.id && Normalizer.key(it.name) == Normalizer.key(name) }
 
     AlertDialog(
@@ -50,7 +51,7 @@ fun CategoryDialog(
         text = {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.size(64.dp)) { Text(emoji, fontSize = 24.sp) }
+                    OutlinedButton(onClick = { picking = true }, modifier = Modifier.size(64.dp), contentPadding = PaddingValues(0.dp)) { ItemIcon(emoji, size = 30.dp) }
                     Spacer(Modifier.width(12.dp))
                     OutlinedTextField(
                         name, { name = it },
@@ -81,13 +82,23 @@ fun CategoryDialog(
         },
         dismissButton = {
             Row {
-                onDelete?.let { TextButton(onClick = it) { Text("Törlés", color = MaterialTheme.colorScheme.error) } }
+                if (onDelete != null) TextButton(onClick = { confirmingDelete = true }) { Text("Törlés", color = MaterialTheme.colorScheme.error) }
                 TextButton(onClick = onDismiss) { Text("Mégse") }
             }
         },
     )
 
+    if (confirmingDelete && onDelete != null) {
+        ConfirmDialog(
+            title = "„${category.name}” törlése?",
+            text = "Az ide tartozó tételek az „Egyéb” kategóriába kerülnek.",
+            confirmLabel = "Törlés",
+            onDismiss = { confirmingDelete = false },
+            onConfirm = onDelete,
+        )
+    }
+
     if (picking) {
-        EmojiPickerDialog(emoji, onDismiss = { picking = false }, onPick = { emoji = it; picking = false })
+        IconPicker(emoji, suggestedName = name, onDismiss = { picking = false }, onPick = { emoji = it; picking = false })
     }
 }

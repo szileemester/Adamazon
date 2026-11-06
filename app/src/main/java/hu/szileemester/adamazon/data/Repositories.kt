@@ -8,6 +8,7 @@ import com.google.firebase.firestore.Source
 import hu.szileemester.adamazon.domain.CardBarcode
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Categorizer
+import hu.szileemester.adamazon.domain.GroupIcon
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.ItemRef
 import hu.szileemester.adamazon.domain.LearnedMapping
@@ -231,6 +232,25 @@ class LearnedRepository(group: DocumentReference) {
     fun remember(name: String, categoryId: String, emoji: String) {
         collection.document(Normalizer.docId(name))
             .set(mapOf("displayName" to name, "categoryId" to categoryId, "emoji" to emoji))
+    }
+}
+
+/** The group's photo stickers, referenced from emoji fields via [hu.szileemester.adamazon.domain.IconRef]. */
+class IconRepository(group: DocumentReference) {
+    private val collection = group.collection("icons")
+
+    val icons: Flow<List<GroupIcon>> =
+        collection.orderBy("createdAt").snapshotFlow().map { s -> s.documents.map { it.toIcon() } }
+
+    /** Stores a sticker and returns its id. */
+    fun add(name: String, image: ByteArray): String {
+        val doc = collection.document()
+        doc.set(mapOf("name" to name, "image" to image.toBlob(), "createdAt" to System.currentTimeMillis()))
+        return doc.id
+    }
+
+    fun delete(id: String) {
+        collection.document(id).delete()
     }
 }
 

@@ -1,9 +1,8 @@
 package hu.szileemester.adamazon.ui.list
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,16 +15,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -46,14 +44,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import hu.szileemester.adamazon.domain.Categorizer
 import hu.szileemester.adamazon.domain.Category
 import hu.szileemester.adamazon.domain.Item
 import hu.szileemester.adamazon.domain.Normalizer
 import hu.szileemester.adamazon.domain.Quantities
 import hu.szileemester.adamazon.domain.Quantity
 import hu.szileemester.adamazon.domain.Store
-import hu.szileemester.adamazon.ui.components.CategoryDialog
-import hu.szileemester.adamazon.ui.components.EmojiPickerDialog
+import hu.szileemester.adamazon.ui.components.CategoryPicker
+import hu.szileemester.adamazon.ui.components.IconPicker
+import hu.szileemester.adamazon.ui.components.ItemIcon
 import hu.szileemester.adamazon.ui.components.StoreLogo
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +65,8 @@ fun ItemEditSheet(
     otherStores: List<Store>,
     onDismiss: () -> Unit,
     onCreateCategory: (name: String, emoji: String) -> String,
+    onUpdateCategory: (Category) -> Unit,
+    onDeleteCategory: (Category) -> Unit,
     onSave: (item: Item, targetStoreId: String) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -77,7 +79,7 @@ fun ItemEditSheet(
     var emoji by remember { mutableStateOf(item.emoji) }
     var targetStoreId by remember { mutableStateOf(currentStore?.id.orEmpty()) }
     var pickingEmoji by remember { mutableStateOf(false) }
-    var creatingCategory by remember { mutableStateOf(false) }
+    var pickingCategory by remember { mutableStateOf(false) }
 
     fun selectCategory(id: String, categoryEmoji: String) {
         // Keep a custom icon, but follow the category if the icon was the category's own.
@@ -100,8 +102,8 @@ fun ItemEditSheet(
                 .navigationBarsPadding(),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { pickingEmoji = true }, modifier = Modifier.size(64.dp)) {
-                    Text(emoji.ifBlank { "?" }, fontSize = 26.sp)
+                OutlinedButton(onClick = { pickingEmoji = true }, modifier = Modifier.size(64.dp), contentPadding = PaddingValues(0.dp)) {
+                    if (emoji.isBlank()) Text("?", fontSize = 26.sp) else ItemIcon(emoji, size = 32.dp)
                 }
                 Spacer(Modifier.width(12.dp))
                 OutlinedTextField(
@@ -135,19 +137,12 @@ fun ItemEditSheet(
             Spacer(Modifier.height(16.dp))
             Text("Kategória", style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(4.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                categories.forEach { category ->
-                    FilterChip(
-                        selected = category.id == categoryId,
-                        onClick = { selectCategory(category.id, category.emoji) },
-                        label = { Text("${category.emoji} ${category.name}") },
-                    )
-                }
-                AssistChip(
-                    onClick = { creatingCategory = true },
-                    label = { Text("Új kategória") },
-                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, Modifier.size(18.dp)) },
-                )
+            val category = categories.firstOrNull { it.id == categoryId }
+            OutlinedButton(onClick = { pickingCategory = true }, modifier = Modifier.fillMaxWidth()) {
+                category?.let { ItemIcon(it.emoji, size = 22.dp) }
+                Spacer(Modifier.width(8.dp))
+                Text(category?.name ?: "Válassz kategóriát", modifier = Modifier.weight(1f))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -172,21 +167,32 @@ fun ItemEditSheet(
         }
     }
 
-    if (creatingCategory) {
-        CategoryDialog(
-            category = Category("", "", "🛒", 0),
-            existing = categories,
-            onDismiss = { creatingCategory = false },
-            onSave = { new ->
-                selectCategory(onCreateCategory(new.name, new.emoji), new.emoji)
-                creatingCategory = false
+    if (pickingCategory) {
+        CategoryPicker(
+            categories = categories,
+            selectedId = categoryId,
+            onDismiss = { pickingCategory = false },
+            onSelect = {
+                selectCategory(it.id, it.emoji)
+                pickingCategory = false
+            },
+            onCreate = onCreateCategory,
+            onUpdate = { updated ->
+                // A new icon on the chosen category also becomes the item's, unless it had its own.
+                if (updated.id == categoryId) categories.firstOrNull { it.id == categoryId }?.let { old -> if (emoji == old.emoji) emoji = updated.emoji }
+                onUpdateCategory(updated)
+            },
+            onDelete = { deleted ->
+                if (deleted.id == categoryId) categoryId = Categorizer.FALLBACK_CATEGORY_ID
+                onDeleteCategory(deleted)
             },
         )
     }
 
     if (pickingEmoji) {
-        EmojiPickerDialog(
+        IconPicker(
             current = emoji,
+            suggestedName = name,
             onDismiss = { pickingEmoji = false },
             onPick = {
                 emoji = it

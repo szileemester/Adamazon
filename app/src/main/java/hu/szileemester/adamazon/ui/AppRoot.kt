@@ -41,6 +41,7 @@ import hu.szileemester.adamazon.data.AccessState
 import hu.szileemester.adamazon.data.DataErrors
 import hu.szileemester.adamazon.data.GroupSession
 import hu.szileemester.adamazon.ui.cards.CardEditScreen
+import hu.szileemester.adamazon.ui.components.ProvideIcons
 import hu.szileemester.adamazon.ui.help.HelpScreen
 import hu.szileemester.adamazon.ui.cards.CardViewerScreen
 import hu.szileemester.adamazon.ui.cards.CardsScreen
@@ -83,7 +84,7 @@ fun AppRoot(container: AppContainer) {
                     LaunchedEffect(Unit) { session.categories.seedDefaultsIfEmpty() }
                     val helpSeen by container.help.seen.collectAsStateWithLifecycle()
                     // The feature tour opens by itself once per device; later it is in Settings.
-                    if (helpSeen) MainNavigation() else HelpScreen(onClose = container.help::markSeen)
+                    if (helpSeen) ProvideIcons(session.icons.icons) { MainNavigation() } else HelpScreen(onClose = container.help::markSeen)
                 }
             }
         }

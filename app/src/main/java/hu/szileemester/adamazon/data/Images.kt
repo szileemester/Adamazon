@@ -31,7 +31,8 @@ class ImageCompressor(private val resolver: ContentResolver) {
         png(decode(uri, maxSide = LOGO_SIZE))
     }
 
-    private fun decode(uri: Uri, maxSide: Int): Bitmap {
+    /** Reads a picked photo upright (EXIF rotation applied), at most [maxSide] px on its longer side. */
+    fun decode(uri: Uri, maxSide: Int): Bitmap {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             // ImageDecoder applies EXIF rotation, so camera photos come out upright.
             val source = ImageDecoder.createSource(resolver, uri)

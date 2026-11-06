@@ -1,0 +1,14 @@
+{
+  "name": "adamazon-emoji-catalog",
+  "private": true,
+  "type": "module",
+  "description": "Builds app/src/main/assets/emoji_hu.json from Unicode CLDR data. Run: npm install && npm run build",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "cldr-annotations-derived-full": "49.0.0",
+    "cldr-annotations-full": "49.0.0",
+    "unicode-emoji-json": "0.9.0"
+  }
+}

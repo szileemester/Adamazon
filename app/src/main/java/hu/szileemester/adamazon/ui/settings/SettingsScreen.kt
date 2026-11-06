@@ -1,6 +1,7 @@
 package hu.szileemester.adamazon.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,10 +36,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -47,6 +47,7 @@ import hu.szileemester.adamazon.BuildConfigInfo
 import hu.szileemester.adamazon.data.AccessState
 import hu.szileemester.adamazon.data.ThemeMode
 import hu.szileemester.adamazon.ui.appViewModel
+import hu.szileemester.adamazon.ui.components.ItemIcon
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -84,7 +85,9 @@ fun SettingsScreen(bottomBar: @Composable () -> Unit, openCategories: () -> Unit
                         Text("Kategóriák", style = MaterialTheme.typography.titleLarge)
                         Text("${categories.size} kategória · sorrend, nevek, ikonok", style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
-                        Text(categories.joinToString(" ") { it.emoji }, fontSize = 22.sp, maxLines = 1, overflow = TextOverflow.Clip)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.clipToBounds()) {
+                            categories.forEach { ItemIcon(it.emoji, size = 26.dp) }
+                        }
                     }
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                 }
