@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.mlkit.barcode)
     implementation(libs.mlkit.subject.segmentation)
     implementation(libs.zxing.core)
+    implementation(libs.play.app.update)
 
     testImplementation(libs.junit)
     testImplementation(libs.json)

@@ -3,6 +3,7 @@ package hu.szileemester.adamazon
 import android.app.Application
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import hu.szileemester.adamazon.data.AppUpdates
 import hu.szileemester.adamazon.data.AuthRepository
 import hu.szileemester.adamazon.data.BarcodeReader
 import hu.szileemester.adamazon.data.GroupSession
@@ -42,6 +43,7 @@ class AppContainer(app: Application) {
         currentSession?.takeIf { it.groupId == groupId } ?: GroupSession(db, groupId).also { currentSession = it }
 
     val theme = ThemeSettings(app)
+    val updates = AppUpdates(app)
     val help = HelpSettings(app)
     val images = ImageCompressor(app.contentResolver)
     val web = WebImages(app)

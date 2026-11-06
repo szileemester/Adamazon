@@ -19,6 +19,7 @@ json = "20260814"
 mlkitBarcode = "17.3.0"
 mlkitSubjectSegmentation = "16.0.0-beta1"
 zxing = "3.5.4"
+appUpdate = "2.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,6 +48,7 @@ json = { group = "org.json", name = "json", version.ref = "json" }
 mlkit-barcode = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcode" }
 mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "mlkitSubjectSegmentation" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+play-app-update = { group = "com.google.android.play", name = "app-update", version.ref = "appUpdate" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
