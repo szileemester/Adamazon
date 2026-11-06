@@ -43,7 +43,7 @@ class AppContainer(app: Application) {
     val theme = ThemeSettings(app)
     val help = HelpSettings(app)
     val images = ImageCompressor(app.contentResolver)
-    val logos = LogoFetcher()
+    val logos = LogoFetcher(app)
     val barcodes = BarcodeReader(app)
     val stickers = StickerMaker(images)
     val recentIcons = RecentIcons(app)

@@ -2,7 +2,6 @@ package hu.szileemester.adamazon.ui.list
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -89,8 +88,10 @@ class StoreSettingsViewModel(private val c: AppContainer, private val storeId: S
         return true
     }
 
-    fun pickLogo(uri: Uri) = viewModelScope.launch {
-        runCatching { c.images.logo(uri) }.onSuccess { c.session.stores.setLogo(storeId, it) }
+    suspend fun pickLogo(uri: Uri): Boolean {
+        val logo = c.logos.fromFile(uri) ?: return false
+        c.session.stores.setLogo(storeId, logo)
+        return true
     }
 
     fun removeLogo() = c.session.stores.setLogo(storeId, null)
@@ -135,8 +136,9 @@ private fun StoreSettingsContent(
     var confirmDelete by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val pickLogo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let(vm::pickLogo)
+    // A file picker, not the photo picker: logos are often SVG or PNG files in Downloads.
+    val pickLogo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch { if (!vm.pickLogo(uri)) snackbar.showSnackbar("Ezt a fájlt nem tudom logóként beolvasni.") }
     }
 
     var order by remember { mutableStateOf(ordered) }
@@ -206,8 +208,8 @@ private fun StoreSettingsContent(
                             ) { Text("Logó letöltése a weboldalról") }
                             Row {
                                 TextButton(onClick = {
-                                    pickLogo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                }) { Text("Galériából") }
+                                    pickLogo.launch(arrayOf("image/*"))
+                                }) { Text("Fájlból") }
                                 if (store.logo != null) TextButton(onClick = vm::removeLogo) { Text("Eltávolítás") }
                             }
                         }

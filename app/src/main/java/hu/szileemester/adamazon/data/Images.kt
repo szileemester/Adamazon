@@ -7,9 +7,6 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import java.io.ByteArrayOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,10 +22,6 @@ class ImageCompressor(private val resolver: ContentResolver) {
 
     suspend fun thumbnail(uri: Uri): ByteArray = withContext(Dispatchers.Default) {
         jpeg(decode(uri, maxSide = 360), maxBytes = 60_000)
-    }
-
-    suspend fun logo(uri: Uri): ByteArray = withContext(Dispatchers.Default) {
-        png(decode(uri, maxSide = LOGO_SIZE))
     }
 
     /** Reads a picked photo upright (EXIF rotation applied), at most [maxSide] px on its longer side. */
@@ -74,26 +67,4 @@ fun Bitmap.scaledToFit(maxSide: Int): Bitmap {
     val scale = maxSide.toFloat() / maxOf(width, height)
     if (scale >= 1f) return this
     return Bitmap.createScaledBitmap(this, (width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1), true)
-}
-
-/** Downloads a store's logo from Google's public favicon service. */
-class LogoFetcher {
-    suspend fun fetch(domain: String): ByteArray? = withContext(Dispatchers.IO) {
-        runCatching {
-            val host = domain.trim().removePrefix("https://").removePrefix("http://").substringBefore('/')
-            val url = URL("https://www.google.com/s2/favicons?domain=${URLEncoder.encode(host, "UTF-8")}&sz=${ImageCompressor.LOGO_SIZE}")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 10_000
-            try {
-                // A missing logo comes back as 404 with a generic 16 px globe – treat it as "no logo".
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) return@runCatching null
-                val bitmap = connection.inputStream.use { BitmapFactory.decodeStream(it) } ?: return@runCatching null
-                if (bitmap.width < 32) return@runCatching null
-                ImageCompressor.png(bitmap.scaledToFit(ImageCompressor.LOGO_SIZE))
-            } finally {
-                connection.disconnect()
-            }
-        }.getOrNull()
-    }
 }

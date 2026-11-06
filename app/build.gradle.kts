@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
     implementation(libs.reorderable)
     implementation(libs.mlkit.barcode)
     implementation(libs.mlkit.subject.segmentation)
